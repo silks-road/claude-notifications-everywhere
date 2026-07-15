@@ -235,6 +235,22 @@ func generateTaskBody(messages []jsonl.Message, cfg *config.Config) string {
 	return "Task completed successfully"
 }
 
+// GenerateFromText builds a notification body from a raw assistant message,
+// applying the same cleanup/truncation as generateTaskBody. Used when the hook
+// payload carries the final message directly (desktop/Cowork sends
+// last_assistant_message) and the transcript is unavailable.
+func GenerateFromText(text string, status analyzer.Status, cfg *config.Config) string {
+	cleaned := CleanMarkdown(text)
+	if cleaned == "" {
+		return GetDefaultMessage(status, cfg)
+	}
+	messageText := cleaned
+	if len([]rune(cleaned)) >= 150 {
+		messageText = extractFirstSentence(cleaned)
+	}
+	return truncateText(messageText, 150)
+}
+
 // generateAPIErrorBody returns the body text for api_error (401 authentication) status.
 func generateAPIErrorBody() string {
 	return "Please run /login"

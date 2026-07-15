@@ -22,10 +22,13 @@ import (
 //
 // Complexity: Medium-High. Edge cases are tricky (e.g. "cat file > output").
 var (
-	ActiveTools   = []string{"Write", "Edit", "Bash", "NotebookEdit", "SlashCommand", "KillShell"}
+	// ActiveTools includes desktop/Cowork tools that produce work product:
+	// Workflow (multi-agent orchestration), Artifact (publishes a page),
+	// Skill (desktop equivalent of SlashCommand), SendMessage (drives agents).
+	ActiveTools   = []string{"Write", "Edit", "Bash", "NotebookEdit", "SlashCommand", "KillShell", "Workflow", "Artifact", "Skill", "SendMessage"}
 	QuestionTools = []string{"AskUserQuestion"}
-	PlanningTools = []string{"ExitPlanMode", "TodoWrite"}
-	PassiveTools  = []string{"Read", "Grep", "Glob", "WebFetch", "WebSearch", "Search", "Fetch", "Task"}
+	PlanningTools = []string{"ExitPlanMode", "TodoWrite", "TaskCreate", "TaskUpdate", "EnterPlanMode"}
+	PassiveTools  = []string{"Read", "Grep", "Glob", "WebFetch", "WebSearch", "Search", "Fetch", "Task", "Agent", "ToolSearch", "TaskList", "TaskGet", "TaskOutput", "Monitor"}
 )
 
 // Status represents the current task status

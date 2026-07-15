@@ -54,6 +54,9 @@ type HookData struct {
 	CWD            string `json:"cwd"`
 	ToolName       string `json:"tool_name,omitempty"`
 	HookEventName  string `json:"hook_event_name,omitempty"`
+	// LastAssistantMessage is sent by desktop/Cowork sessions on Stop and
+	// SubagentStop. Used as a fallback when the transcript is unavailable.
+	LastAssistantMessage string `json:"last_assistant_message,omitempty"`
 	// Team-related fields (present in TeammateIdle, TaskCreated, TaskCompleted hooks)
 	TeamName     string `json:"team_name,omitempty"`
 	TeammateName string `json:"teammate_name,omitempty"`
@@ -156,8 +159,8 @@ func (h *Handler) HandleHook(hookEvent string, input io.Reader) error {
 	}
 	bench.Elapsed("stdin.parse")
 
-	logging.Debug("Hook data: session=%s, transcript=%s, tool=%s",
-		hookData.SessionID, hookData.TranscriptPath, hookData.ToolName)
+	logging.Debug("Hook data: session=%s, transcript=%s, tool=%s, source=%s",
+		hookData.SessionID, hookData.TranscriptPath, hookData.ToolName, platform.GetSessionSource())
 
 	// Validate session ID
 	if hookData.SessionID == "" {
@@ -539,11 +542,17 @@ func skipUTF8BOM(input io.Reader) io.Reader {
 // (e.g., for summary generation) without re-reading the transcript file.
 func (h *Handler) handleStopEvent(hookData *HookData) (analyzer.Status, []jsonl.Message, error) {
 	if hookData.TranscriptPath == "" {
+		if status := h.statusFromPayloadFallback(hookData); status != analyzer.StatusUnknown {
+			return status, nil, nil
+		}
 		logging.Warn("Transcript path is empty, skipping notification")
 		return analyzer.StatusUnknown, nil, nil
 	}
 
 	if !platform.FileExists(hookData.TranscriptPath) {
+		if status := h.statusFromPayloadFallback(hookData); status != analyzer.StatusUnknown {
+			return status, nil, nil
+		}
 		logging.Warn("Transcript file not found: %s", hookData.TranscriptPath)
 		return analyzer.StatusUnknown, nil, nil
 	}
@@ -551,11 +560,27 @@ func (h *Handler) handleStopEvent(hookData *HookData) (analyzer.Status, []jsonl.
 	status, messages, err := analyzer.AnalyzeTranscriptWithMessages(hookData.TranscriptPath, h.cfg)
 	if err != nil {
 		logging.Error("Failed to analyze transcript: %v", err)
+		if status := h.statusFromPayloadFallback(hookData); status != analyzer.StatusUnknown {
+			return status, nil, nil
+		}
 		return analyzer.StatusUnknown, nil, nil
 	}
 
 	logging.Debug("Analyzed status: %s", status)
 	return status, messages, nil
+}
+
+// statusFromPayloadFallback classifies a Stop/SubagentStop event from the hook
+// payload alone when the transcript cannot be read. Desktop/Cowork sessions
+// include last_assistant_message in the payload, which is enough to report a
+// generic completion (the rich state machine needs the transcript).
+func (h *Handler) statusFromPayloadFallback(hookData *HookData) analyzer.Status {
+	if hookData.LastAssistantMessage == "" {
+		return analyzer.StatusUnknown
+	}
+	logging.Debug("Transcript unavailable, falling back to last_assistant_message from payload (source=%s)",
+		platform.GetSessionSource())
+	return analyzer.StatusTaskComplete
 }
 
 // generateMessage generates a notification body and action summary.
@@ -569,6 +594,12 @@ func (h *Handler) generateMessage(hookData *HookData, status analyzer.Status, me
 		if parsed, err := jsonl.ParseFile(hookData.TranscriptPath); err == nil {
 			body, actions = summary.GenerateFromMessagesStructured(parsed, status, h.cfg)
 		}
+	}
+
+	// Desktop/Cowork payload fallback: no transcript was readable, but the
+	// hook payload carried the final assistant message.
+	if body == "" && hookData.LastAssistantMessage != "" {
+		body = summary.GenerateFromText(hookData.LastAssistantMessage, status, h.cfg)
 	}
 
 	if body == "" {
