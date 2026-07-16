@@ -92,6 +92,16 @@ func AnalyzeTranscriptWithMessages(transcriptPath string, cfg *config.Config) (S
 	// Extract tools with positions
 	tools := jsonl.ExtractTools(recentMessages)
 
+	// Text-based override: a turn that used tools but ENDS by asking the user
+	// something ("pushed the branch — approve the force-push?") is a question,
+	// not a completion. Applied to completion-flavored statuses only.
+	finalize := func(s Status) Status {
+		if (s == StatusTaskComplete || s == StatusReviewComplete) && awaitingUserResponse(recentMessages) {
+			return StatusQuestion
+		}
+		return s
+	}
+
 	// STATE MACHINE LOGIC - tool-based detection only
 
 	// 1. If we have tools, analyze them
@@ -113,7 +123,7 @@ func AnalyzeTranscriptWithMessages(transcriptPath string, cfg *config.Config) (S
 		if exitPlanPos >= 0 {
 			toolsAfter := jsonl.CountToolsAfterPosition(tools, exitPlanPos)
 			if toolsAfter > 0 {
-				return StatusTaskComplete, messages, nil
+				return finalize(StatusTaskComplete), messages, nil
 			}
 		}
 
@@ -130,25 +140,25 @@ func AnalyzeTranscriptWithMessages(transcriptPath string, cfg *config.Config) (S
 			recentText := jsonl.ExtractRecentText(recentMessages, 5)
 
 			if len(recentText) > 200 {
-				return StatusReviewComplete, messages, nil
+				return finalize(StatusReviewComplete), messages, nil
 			}
 		}
 
 		// 1e. Last tool is active (Write/Edit/Bash) → work completed
 		if contains(ActiveTools, lastTool) {
-			return StatusTaskComplete, messages, nil
+			return finalize(StatusTaskComplete), messages, nil
 		}
 
 		// 1f. Any tool usage at all → likely task completed
 		// (matches bash version: toolCount >= 1 → task_complete)
-		return StatusTaskComplete, messages, nil
+		return finalize(StatusTaskComplete), messages, nil
 	}
 
 	// 2. No tools found
 	// If notifyOnTextResponse is enabled (default: true), treat as task_complete
 	// This handles cases like extended thinking where Claude responds with text only
 	if cfg.ShouldNotifyOnTextResponse() {
-		return StatusTaskComplete, messages, nil
+		return finalize(StatusTaskComplete), messages, nil
 	}
 
 	return StatusUnknown, messages, nil
