@@ -47,6 +47,10 @@ Everything below is on top of the upstream plugin, which only knew about termina
 - **One-sentence summaries** — the body is the outcome sentence of Claude's reply (markdown stripped, capped ~110 chars), not a wall of raw text.
 - **Click opens the exact conversation** — not just the app. There is no public deep link for this (`claude://resume` *imports a duplicate* of the session — don't use it), so the plugin drives the app's UI through the macOS Accessibility API: activate app → switch Home/Code area if needed → press the conversation's sidebar item. Falls back to plain app activation if anything is missing, and launches the app if it isn't running.
 
+### Who can use this?
+
+Any Claude account that can run **Claude Code** works — Pro, Max, Team, or Enterprise subscriptions, and API/Console (pay-as-you-go) users in the terminal. The **desktop app (Cowork) features need a plan that includes the Claude desktop app** (Pro and up); no separate API access is required — the plugin only reads local hook events and log files on your own machine. Free-tier accounts don't include Claude Code, so the plugin has nothing to notify about.
+
 ### Setup (macOS) — no terminal or git needed
 
 Everything happens inside Claude Code or the Claude desktop app; the plugin downloads its own pre-built program (from this repo's [Releases](https://github.com/silks-road/claude-notifications-everywhere/releases)) the first time it runs.

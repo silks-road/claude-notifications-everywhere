@@ -5,6 +5,11 @@ struct NotificationConfig {
     let message: String
     let subtitle: String?
     let action: ClickAction
+    /// Shell commands for the approval action buttons; when set the
+    /// notification uses the CLAUDE_APPROVAL category ("Always allow" /
+    /// "Allow once" buttons).
+    let executeAlways: String?
+    let executeOnce: String?
     let group: String?
     let threadID: String?
     let timeSensitive: Bool
@@ -36,6 +41,8 @@ enum ArgumentParser {
         var subtitle: String?
         var activate: String?
         var execute: String?
+        var executeAlways: String?
+        var executeOnce: String?
         var group: String?
         var threadID: String?
         var timeSensitive = false
@@ -80,6 +87,20 @@ enum ArgumentParser {
                 }
                 i += 1
                 execute = arguments[i]
+
+            case "-executeAlways":
+                guard i + 1 < arguments.count else {
+                    throw ArgumentParserError.missingValue("-executeAlways")
+                }
+                i += 1
+                executeAlways = arguments[i]
+
+            case "-executeOnce":
+                guard i + 1 < arguments.count else {
+                    throw ArgumentParserError.missingValue("-executeOnce")
+                }
+                i += 1
+                executeOnce = arguments[i]
 
             case "-group":
                 guard i + 1 < arguments.count else {
@@ -132,6 +153,8 @@ enum ArgumentParser {
             message: messageValue,
             subtitle: subtitle,
             action: action,
+            executeAlways: executeAlways,
+            executeOnce: executeOnce,
             group: group,
             threadID: threadID,
             timeSensitive: timeSensitive,

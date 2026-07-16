@@ -159,6 +159,7 @@ func (n *Notifier) SendDesktop(status analyzer.Status, message, sessionID, cwd s
 				timeSensitive,
 				cwd,
 				n.cfg.Notifications.Desktop.ClickToFocus,
+				status,
 			); err != nil {
 				var permissionErr *NotificationPermissionDeniedError
 				if errors.As(err, &permissionErr) {
@@ -206,7 +207,7 @@ func (n *Notifier) SendDesktop(status analyzer.Status, message, sessionID, cwd s
 
 // sendWithTerminalNotifier sends notification via terminal-notifier on macOS
 // with click-to-focus support (clicking notification activates the terminal)
-func (n *Notifier) sendWithTerminalNotifier(title, message, subtitle, sessionID string, timeSensitive bool, cwd string, clickToFocus bool) error {
+func (n *Notifier) sendWithTerminalNotifier(title, message, subtitle, sessionID string, timeSensitive bool, cwd string, clickToFocus bool, status analyzer.Status) error {
 	notifierPath, err := GetTerminalNotifierPath()
 	if err != nil {
 		return fmt.Errorf("terminal-notifier not found: %w", err)
@@ -230,6 +231,20 @@ func (n *Notifier) sendWithTerminalNotifier(title, message, subtitle, sessionID 
 			logging.Debug("%s detected but target capture failed, falling back to -activate", muxName)
 		}
 		args = buildTerminalNotifierArgsWithOptions(title, message, bundleID, cwd, ghosttyTerminalID, clickToFocus)
+	}
+
+	// Approval notifications for desktop sessions get action buttons that
+	// answer the pending permission card remotely (respond-approval presses
+	// the card's own Always allow / Allow once buttons via Accessibility).
+	if status == analyzer.StatusApprovalNeeded && platform.IsDesktopSession() && sessionUUIDPattern.MatchString(sessionID) {
+		if exe, err := os.Executable(); err == nil {
+			if exe, err = filepath.EvalSymlinks(exe); err == nil {
+				args = append(args,
+					"-executeAlways", shellQuote(exe)+" respond-approval "+shellQuote(sessionID)+" always",
+					"-executeOnce", shellQuote(exe)+" respond-approval "+shellQuote(sessionID)+" once",
+				)
+			}
+		}
 	}
 
 	// Append shared options: subtitle, threadID, timeSensitive, nosound

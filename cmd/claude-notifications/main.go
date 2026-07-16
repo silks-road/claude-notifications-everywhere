@@ -78,6 +78,15 @@ func main() {
 			fmt.Fprintf(os.Stderr, "focus-session: %v\n", err)
 			os.Exit(1)
 		}
+	case "respond-approval":
+		if len(os.Args) < 4 {
+			fmt.Fprintf(os.Stderr, "Error: respond-approval requires session id and scope (always|once)\n")
+			os.Exit(1)
+		}
+		if err := notifier.RespondDesktopApproval(os.Args[2], os.Args[3]); err != nil {
+			fmt.Fprintf(os.Stderr, "respond-approval: %v\n", err)
+			os.Exit(1)
+		}
 	case "approval-watch":
 		if len(os.Args) < 5 {
 			fmt.Fprintf(os.Stderr, "Error: approval-watch requires session id, cwd and log offset\n")

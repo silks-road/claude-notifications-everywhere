@@ -35,7 +35,9 @@ final class UNNotificationService: NotificationSending {
         content.title = config.title
         content.body = config.message
         content.sound = config.silent ? nil : .default
-        content.categoryIdentifier = "CLAUDE_NOTIFICATION"
+        content.categoryIdentifier = (config.executeAlways != nil || config.executeOnce != nil)
+            ? NotificationCategory.approvalCategoryIdentifier
+            : NotificationCategory.categoryIdentifier
 
         if let subtitle = config.subtitle {
             content.subtitle = subtitle
@@ -53,6 +55,12 @@ final class UNNotificationService: NotificationSending {
 
         if let actionJSON = config.action.toJSON() {
             content.userInfo["action"] = actionJSON
+        }
+        if let cmd = config.executeAlways, let json = ClickAction.execute(command: cmd).toJSON() {
+            content.userInfo["actionAlways"] = json
+        }
+        if let cmd = config.executeOnce, let json = ClickAction.execute(command: cmd).toJSON() {
+            content.userInfo["actionOnce"] = json
         }
 
         let identifier = config.group ?? UUID().uuidString

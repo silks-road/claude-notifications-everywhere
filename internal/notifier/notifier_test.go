@@ -1075,7 +1075,7 @@ func TestSendWithTerminalNotifier_PathNotFound(t *testing.T) {
 
 	// This may succeed if terminal-notifier is installed system-wide
 	// or fail if not - both are valid outcomes
-	err := n.sendWithTerminalNotifier("Test", "Message", "", "", false, "", true)
+	err := n.sendWithTerminalNotifier("Test", "Message", "", "", false, "", true, analyzer.StatusTaskComplete)
 	_ = err // We just want to exercise the code path
 }
 

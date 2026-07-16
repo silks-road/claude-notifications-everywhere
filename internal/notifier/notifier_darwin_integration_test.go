@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/777genius/claude-notifications/internal/analyzer"
 	"github.com/777genius/claude-notifications/internal/config"
 )
 
@@ -33,7 +34,7 @@ func TestSendWithTerminalNotifier_Integration(t *testing.T) {
 	n := New(cfg)
 
 	// This will send a real notification - we just verify it doesn't error
-	err := n.sendWithTerminalNotifier("Integration Test", "This is a test notification", "", "", false, "", true)
+	err := n.sendWithTerminalNotifier("Integration Test", "This is a test notification", "", "", false, "", true, analyzer.StatusTaskComplete)
 	if err != nil {
 		t.Errorf("sendWithTerminalNotifier failed: %v", err)
 	}

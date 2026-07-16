@@ -181,6 +181,68 @@ static int pressExactButtonInApp(int pid, const char *targetTitle) {
 	}
 }
 
+// findAndPressPrefixButton walks el for an AXButton whose accessible name
+// STARTS WITH target and presses it. Permission-card buttons carry hotkey
+// suffixes ("Always allow 2", "Allow once 3 ⌘ ⏎"), so exact match fails.
+static int findAndPressPrefixButton(AXUIElementRef el, NSString *target, int depth, int *budget) {
+	if (depth > 40 || *budget <= 0) return 0;
+	(*budget)--;
+
+	CFTypeRef roleRef = NULL;
+	BOOL isButton = NO;
+	if (AXUIElementCopyAttributeValue(el, CFSTR("AXRole"), &roleRef) == kAXErrorSuccess && roleRef) {
+		isButton = CFGetTypeID(roleRef) == CFStringGetTypeID() &&
+			[(__bridge NSString *)roleRef isEqualToString:@"AXButton"];
+		CFRelease(roleRef);
+	}
+	if (isButton) {
+		NSString *name = copyButtonName(el);
+		if (name && [name hasPrefix:target]) {
+			AXUIElementPerformAction(el, CFSTR("AXScrollToVisible"));
+			return AXUIElementPerformAction(el, CFSTR("AXPress")) == kAXErrorSuccess ? 1 : 0;
+		}
+	}
+
+	CFTypeRef childrenRef = NULL;
+	if (AXUIElementCopyAttributeValue(el, CFSTR("AXChildren"), &childrenRef) != kAXErrorSuccess || !childrenRef) {
+		return 0;
+	}
+	int pressed = 0;
+	CFArrayRef children = (CFArrayRef)childrenRef;
+	CFIndex count = CFArrayGetCount(children);
+	for (CFIndex i = 0; i < count && !pressed; i++) {
+		pressed = findAndPressPrefixButton((AXUIElementRef)CFArrayGetValueAtIndex(children, i), target, depth + 1, budget);
+	}
+	CFRelease(childrenRef);
+	return pressed;
+}
+
+// pressPrefixButtonInApp presses the first AXButton whose name starts with
+// targetPrefix. Returns 1 pressed, 0 not found, -1 not trusted.
+static int pressPrefixButtonInApp(int pid, const char *targetPrefix) {
+	@autoreleasepool {
+		if (!AXIsProcessTrusted()) return -1;
+		AXUIElementRef appEl = AXUIElementCreateApplication((pid_t)pid);
+		if (!appEl) return 0;
+		CFTypeRef windowsRef = NULL;
+		if (AXUIElementCopyAttributeValue(appEl, CFSTR("AXWindows"), &windowsRef) != kAXErrorSuccess || !windowsRef) {
+			CFRelease(appEl);
+			return 0;
+		}
+		NSString *target = [NSString stringWithUTF8String:targetPrefix];
+		int pressed = 0;
+		int budget = 200000;
+		CFArrayRef windows = (CFArrayRef)windowsRef;
+		CFIndex count = CFArrayGetCount(windows);
+		for (CFIndex i = 0; i < count && !pressed; i++) {
+			pressed = findAndPressPrefixButton((AXUIElementRef)CFArrayGetValueAtIndex(windows, i), target, 0, &budget);
+		}
+		CFRelease(windowsRef);
+		CFRelease(appEl);
+		return pressed;
+	}
+}
+
 // pressSessionButtonInApp searches all windows of pid for the conversation
 // button and presses it. Returns 1 pressed, 0 not found, -1 not trusted.
 static int pressSessionButtonInApp(int pid, const char *targetTitle) {
@@ -223,6 +285,54 @@ import (
 	"github.com/777genius/claude-notifications/internal/logging"
 	"github.com/777genius/claude-notifications/internal/platform"
 )
+
+// RespondDesktopApproval answers a pending permission card in the Claude
+// desktop app: it navigates to the conversation (sidebar press) and then
+// presses the card's "Always allow" or "Allow once" button. The card buttons
+// carry hotkey suffixes, so they are matched by prefix. Used by the approval
+// notification's action buttons.
+func RespondDesktopApproval(cliSessionID, scope string) error {
+	var buttonPrefix string
+	switch scope {
+	case "always":
+		buttonPrefix = "Always allow"
+	case "once":
+		buttonPrefix = "Allow once"
+	default:
+		return fmt.Errorf("unknown approval scope %q (want always|once)", scope)
+	}
+
+	// Bring the right conversation to front; ignore failure (the press loop
+	// below still tries — the card may already be visible).
+	if err := FocusDesktopSessionByCLIID(cliSessionID); err != nil {
+		logging.Debug("respond-approval: focus failed (continuing): %v", err)
+	}
+
+	cBundleID := C.CString(platform.DesktopAppBundleID)
+	defer C.free(unsafe.Pointer(cBundleID))
+	pid := int(C.axSessionFindPID(cBundleID))
+	if pid < 0 {
+		return fmt.Errorf("Claude desktop app is not running")
+	}
+
+	cPrefix := C.CString(buttonPrefix)
+	defer C.free(unsafe.Pointer(cPrefix))
+
+	deadline := time.Now().Add(6 * time.Second)
+	for {
+		switch C.pressPrefixButtonInApp(C.int(pid), cPrefix) {
+		case 1:
+			logging.Debug("respond-approval: pressed %q for session %s", buttonPrefix, cliSessionID)
+			return nil
+		case -1:
+			return fmt.Errorf("accessibility permission not granted")
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("no %q button found (card may already be answered)", buttonPrefix)
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+}
 
 // FocusDesktopSessionByCLIID brings the Claude desktop app to the front and
 // selects the conversation belonging to cliSessionID by pressing its sidebar

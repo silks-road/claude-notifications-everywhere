@@ -22,6 +22,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         switch response.actionIdentifier {
         case "DISMISS", UNNotificationDismissActionIdentifier:
             break
+        case "ALWAYS_ALLOW":
+            executeFromUserInfo(response, key: "actionAlways")
+        case "ALLOW_ONCE":
+            executeFromUserInfo(response, key: "actionOnce")
         case "OPEN", UNNotificationDefaultActionIdentifier:
             let userInfo = response.notification.request.content.userInfo
             if let actionJSON = userInfo["action"] as? String,
@@ -40,6 +44,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             NSApplication.shared.terminate(nil)
+        }
+    }
+
+    private func executeFromUserInfo(_ response: UNNotificationResponse, key: String) {
+        let userInfo = response.notification.request.content.userInfo
+        if let actionJSON = userInfo[key] as? String,
+           let action = ClickAction.fromJSON(actionJSON) {
+            actionExecutor.execute(action)
         }
     }
 
