@@ -4,17 +4,12 @@
 [![macOS CI](https://github.com/silks-road/claude-notifications-go/workflows/macOS%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-go/actions)
 [![Windows CI](https://github.com/silks-road/claude-notifications-go/workflows/Windows%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-go/actions)
 
-> **🖥️ This fork adds [Claude Desktop app (Cowork) support](#️-claude-desktop-cowork-support-this-fork)** — notifications from desktop app sessions, conversation names in every alert, and click-to-open-the-exact-conversation. Forked from [777genius/claude-notifications-go](https://github.com/777genius/claude-notifications-go).
+> **🖥️ This fork adds [Claude Desktop app (Cowork) support](#claude-desktop-cowork-support-this-fork)** — notifications from desktop app sessions, conversation names in every alert, and click-to-open-the-exact-conversation. Forked from [777genius/claude-notifications-go](https://github.com/777genius/claude-notifications-go).
 
-<div>
-<table>
-  <tr>
-    <td align="center"><img width="250" height="350" alt="image" src="https://github.com/user-attachments/assets/e7aa6d8e-5d28-48f7-bafe-ad696857b938" /></td>
-    <td align="center"><img width="350" alt="image" src="https://i.imgur.com/Nrt6dEo.png" /></td>
-    <td align="center"><img width="220" alt="image" src="https://github.com/user-attachments/assets/4b5929d8-1a51-4a15-a3d5-dda5482554cc" /></td>
-  </tr>
-</table>
-</div>
+<p align="center">
+  <img src="docs/images/cowork-notification.svg" width="560" alt="Notification: '✅ Done — Notifications plugin expansion' with a one-sentence summary"/><br/>
+  <img src="docs/images/cowork-question.svg" width="560" alt="Notification: '❓ Needs you — Irish Rail' asking which date range to use"/>
+</p>
 
 Smart notifications for Claude Code with click-to-focus, git branch display, and webhook integrations.
 
@@ -22,7 +17,7 @@ Smart notifications for Claude Code with click-to-focus, git branch display, and
 
 ## Table of Contents
 
-  - [Claude Desktop (Cowork) Support — this fork](#️-claude-desktop-cowork-support-this-fork)
+  - [Claude Desktop (Cowork) support — this fork](#claude-desktop-cowork-support-this-fork)
   - [Features](#features)
   - [Installation](#installation)
     - [Prerequisites](#prerequisites)
@@ -42,11 +37,9 @@ Smart notifications for Claude Code with click-to-focus, git branch display, and
   - [Documentation](#documentation)
   - [License](#license)
 
-## 🖥️ Claude Desktop (Cowork) Support (this fork)
+## Claude Desktop (Cowork) support (this fork)
 
 Everything below is on top of the upstream plugin, which only knew about terminals. If you run Claude Code inside the **Claude desktop app** (Cowork "Home" tasks or the "Code" tab), this fork makes notifications first-class there:
-
-<p align="center"><img src="docs/images/cowork-notification.svg" width="620" alt="Example desktop notification: '✅ Done — Notifications plugin expansion' with a one-sentence summary"/></p>
 
 - **Desktop app sessions detected automatically** — hooks fired from the app (instead of a terminal) get desktop-appropriate behavior; terminal sessions keep all upstream behavior.
 - **The alert tells you *which chat*** — title format `✅ Done — <conversation name>`, resolved live from the app's own session records. Running several Home + Code sessions at once stays legible.
@@ -95,10 +88,11 @@ flowchart LR
 ## Features
 
 - **Cross-platform**: macOS (Intel & Apple Silicon), Linux (x64 & ARM64), Windows 10+ (x64)
+- **Claude Desktop app (Cowork) support** *(this fork)*: conversation name in every alert, one-sentence summaries, click opens the exact conversation — [details](#claude-desktop-cowork-support-this-fork)
 - **6 notification types**: Task Complete, Review Complete, Question, Plan Ready, Session Limit, API Error
 - **Click-to-focus** (macOS, Linux): click notification to focus the exact project window and tab — Ghostty, VS Code, iTerm2, Warp, kitty, WezTerm, Alacritty, Hyper, Apple Terminal, GNOME Terminal, Konsole, Tilix, Terminator, XFCE4 Terminal, MATE Terminal
 - **Multiplexers**: tmux (including iTerm2 -CC integration mode), zellij, WezTerm, kitty — click switches to the correct session/pane/tab
-- **Git branch in title**: `✅ Completed main [cat]`
+- **Git branch in title** (terminal sessions): `✅ Done main [cat]`
 - **Sounds**: MP3/WAV/FLAC/OGG/AIFF, volume control, audio device selection
 - **Webhooks**: Slack, Discord, Telegram, Lark/Feishu, Microsoft Teams, ntfy.sh, PagerDuty, Zapier, n8n, Make, custom — with retry, circuit breaker, rate limiting ([docs](docs/webhooks/README.md))
 - **[Plugin compatibility](docs/PLUGIN_COMPATIBILITY.md)**: works with [double-shot-latte](https://github.com/obra/double-shot-latte) and other plugins that spawn background Claude instances
@@ -112,6 +106,8 @@ flowchart LR
 - **macOS/Linux users:** No additional software required
 
 ### Quick Install (Recommended)
+
+> **Using the Claude desktop app (Cowork)?** The quick installer downloads *upstream* release binaries, which do not include this fork's desktop-app features. Follow [the fork setup](#claude-desktop-cowork-support-this-fork) (build from source) instead.
 
 One command to install everything:
 
@@ -178,7 +174,7 @@ If the binary auto-update didn't work (e.g. no internet at the time), run `/clau
 
 | Status | Icon | Description | Trigger |
 |--------|------|-------------|---------|
-| Task Complete | ✅ | Main task completed | Stop/SubagentStop hooks (state machine detects active tools like Write/Edit/Bash, or ExitPlanMode followed by tool usage) |
+| Task Complete | ✅ | Main task completed | Stop/SubagentStop hooks (state machine detects active tools like Write/Edit/Bash, or ExitPlanMode followed by tool usage). *This fork:* reclassified as Question when the final message asks the user something ("approval needed", trailing "?") |
 | Review Complete | 🔍 | Code review finished | Stop/SubagentStop hooks (state machine detects only read-like tools: Read/Grep/Glob with no active tools, plus long text response >200 chars) |
 | Question | ❓ | Claude has a question | PreToolUse hook (AskUserQuestion) OR Notification hook |
 | Plan Ready | 📋 | Plan ready for approval | PreToolUse hook (ExitPlanMode) |
@@ -292,7 +288,7 @@ Edit the config file directly:
   },
   "statuses": {
     "task_complete": {
-      "title": "✅ Completed",
+      "title": "✅ Done",
       "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/task-complete.mp3"
     },
     "review_complete": {
