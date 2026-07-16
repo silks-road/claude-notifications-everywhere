@@ -36,6 +36,7 @@ type Status string
 
 const (
 	StatusTaskComplete        Status = "task_complete"
+	StatusApprovalNeeded      Status = "approval_needed"
 	StatusReviewComplete      Status = "review_complete"
 	StatusQuestion            Status = "question"
 	StatusPlanReady           Status = "plan_ready"

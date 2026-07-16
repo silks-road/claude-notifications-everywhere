@@ -63,7 +63,8 @@ func New(cfg *config.Config) *Notifier {
 // isTimeSensitiveStatus returns true for statuses that should break through Focus Mode
 func isTimeSensitiveStatus(status analyzer.Status) bool {
 	switch status {
-	case analyzer.StatusAPIError, analyzer.StatusAPIErrorOverloaded, analyzer.StatusSessionLimitReached:
+	case analyzer.StatusAPIError, analyzer.StatusAPIErrorOverloaded, analyzer.StatusSessionLimitReached,
+		analyzer.StatusApprovalNeeded:
 		return true
 	default:
 		return false

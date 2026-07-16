@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -57,6 +59,9 @@ type HookData struct {
 	// LastAssistantMessage is sent by desktop/Cowork sessions on Stop and
 	// SubagentStop. Used as a fallback when the transcript is unavailable.
 	LastAssistantMessage string `json:"last_assistant_message,omitempty"`
+	// Message is sent by the Notification hook (e.g. "Claude needs your
+	// permission to use Bash").
+	Message string `json:"message,omitempty"`
 	// Team-related fields (present in TeammateIdle, TaskCreated, TaskCompleted hooks)
 	TeamName     string `json:"team_name,omitempty"`
 	TeammateName string `json:"teammate_name,omitempty"`
@@ -199,6 +204,12 @@ func (h *Handler) HandleHook(hookEvent string, input io.Reader) error {
 	switch hookEvent {
 	case "PreToolUse":
 		status = h.handlePreToolUse(&hookData)
+	case "PreToolUseWatch":
+		// Desktop (Cowork) sessions: the app never fires the Notification hook
+		// for permission prompts, so every tool call spawns a detached watcher
+		// that notifies if the app log shows an unanswered permission request.
+		h.spawnApprovalWatch(&hookData)
+		return nil
 	case "Notification":
 		// Check session state first (60s TTL) to suppress duplicates after PreToolUse
 		status, err = h.handleNotificationEvent(&hookData)
@@ -455,12 +466,45 @@ func (h *Handler) handlePreToolUse(hookData *HookData) analyzer.Status {
 	return status
 }
 
-// handleNotificationEvent handles Notification hook
-// Always returns StatusQuestion as per design: Notification hook is triggered
-// when Claude needs user input (e.g., permission dialogs, questions)
+// handleNotificationEvent handles Notification hook (CLI sessions only —
+// desktop app sessions never emit it; see spawnApprovalWatch). Permission
+// prompts get the dedicated approval status; everything else is a question.
 func (h *Handler) handleNotificationEvent(hookData *HookData) (analyzer.Status, error) {
+	lower := strings.ToLower(hookData.Message)
+	if strings.Contains(lower, "permission") || strings.Contains(lower, "approval") {
+		logging.Debug("Notification event received → approval_needed status")
+		return analyzer.StatusApprovalNeeded, nil
+	}
 	logging.Debug("Notification event received → question status")
 	return analyzer.StatusQuestion, nil
+}
+
+// spawnApprovalWatch starts a detached `approval-watch` process for desktop
+// sessions. It captures the current app-log offset so the watcher only sees
+// lines caused by this tool call, then returns immediately — the hook must
+// not block the tool.
+func (h *Handler) spawnApprovalWatch(hookData *HookData) {
+	if !platform.IsDesktopSession() || hookData.SessionID == "" {
+		return
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		logging.Debug("approval-watch spawn: executable lookup failed: %v", err)
+		return
+	}
+	offset := notifier.DesktopAppLogSize()
+	cmd := exec.Command(exe, "approval-watch",
+		hookData.SessionID, hookData.CWD, strconv.FormatInt(offset, 10))
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	cmd.Stdin = nil
+	if err := cmd.Start(); err != nil {
+		logging.Debug("approval-watch spawn failed: %v", err)
+		return
+	}
+	// Detach: the watcher outlives this hook process.
+	_ = cmd.Process.Release()
+	logging.Debug("approval-watch spawned for tool=%s offset=%d", hookData.ToolName, offset)
 }
 
 // handleTeammateIdle handles the TeammateIdle hook event.

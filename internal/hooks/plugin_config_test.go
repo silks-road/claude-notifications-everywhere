@@ -56,10 +56,16 @@ func TestPluginHooksUseExecFormWrapper(t *testing.T) {
 		"TeammateIdle": "TeammateIdle",
 	}
 
+	// PreToolUse has a second matcher group ("*" → PreToolUseWatch) that
+	// spawns the desktop approval watcher; validate the primary group here.
 	for hookEvent, expectedArg := range expected {
 		groups := settings.Hooks[hookEvent]
-		if len(groups) != 1 {
-			t.Fatalf("%s groups = %d, want 1", hookEvent, len(groups))
+		wantGroups := 1
+		if hookEvent == "PreToolUse" {
+			wantGroups = 2
+		}
+		if len(groups) != wantGroups {
+			t.Fatalf("%s groups = %d, want %d", hookEvent, len(groups), wantGroups)
 		}
 		if len(groups[0].Hooks) != 1 {
 			t.Fatalf("%s commands = %d, want 1", hookEvent, len(groups[0].Hooks))

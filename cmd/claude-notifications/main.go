@@ -14,6 +14,7 @@ import (
 	"github.com/777genius/claude-notifications/internal/audio"
 	"github.com/777genius/claude-notifications/internal/errorhandler"
 	"github.com/777genius/claude-notifications/internal/hooks"
+	"github.com/777genius/claude-notifications/internal/config"
 	"github.com/777genius/claude-notifications/internal/logging"
 	"github.com/777genius/claude-notifications/internal/notifier"
 	"github.com/777genius/claude-notifications/internal/winfocus"
@@ -77,6 +78,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "focus-session: %v\n", err)
 			os.Exit(1)
 		}
+	case "approval-watch":
+		if len(os.Args) < 5 {
+			fmt.Fprintf(os.Stderr, "Error: approval-watch requires session id, cwd and log offset\n")
+			os.Exit(1)
+		}
+		runApprovalWatch(os.Args[2], os.Args[3], os.Args[4])
 	case "play-sound":
 		runPlaySound(os.Args[2:])
 	case "daemon", "--daemon":
@@ -235,6 +242,36 @@ func handleHook(hookEvent string) {
 	if err := handler.HandleHook(hookEvent, os.Stdin); err != nil {
 		errorhandler.HandleCriticalError(err, "Failed to handle hook")
 		os.Exit(1)
+	}
+}
+
+// runApprovalWatch runs the detached desktop-approval watcher (spawned by the
+// PreToolUseWatch hook): watches the Claude app log from logOffset for
+// unanswered permission requests belonging to the session and notifies.
+func runApprovalWatch(sessionID, cwd, logOffsetStr string) {
+	defer errorhandler.HandlePanic()
+
+	pluginRoot := getPluginRoot()
+	if _, err := logging.InitLogger(pluginRoot); err == nil {
+		defer logging.Close()
+	}
+
+	logOffset, err := strconv.ParseInt(logOffsetStr, 10, 64)
+	if err != nil {
+		logging.Warn("approval-watch: bad log offset %q: %v", logOffsetStr, err)
+		return
+	}
+
+	cfg, err := config.LoadFromPluginRoot(pluginRoot)
+	if err != nil {
+		logging.Warn("approval-watch: config load failed: %v", err)
+		return
+	}
+
+	n := notifier.New(cfg)
+	defer n.Close()
+	if err := n.WatchDesktopApprovals(sessionID, cwd, logOffset); err != nil {
+		logging.Debug("approval-watch finished: %v", err)
 	}
 }
 

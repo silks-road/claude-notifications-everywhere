@@ -21,3 +21,11 @@ func resolveDesktopSessionID(cliSessionID string) string {
 func FocusDesktopSessionByCLIID(cliSessionID string) error {
 	return fmt.Errorf("focus-session not supported on this platform")
 }
+
+// DesktopAppLogSize is only meaningful on macOS.
+func DesktopAppLogSize() int64 { return 0 }
+
+// WatchDesktopApprovals is only implemented on macOS.
+func (n *Notifier) WatchDesktopApprovals(cliSessionID, cwd string, logOffset int64) error {
+	return fmt.Errorf("approval watching not supported on this platform")
+}

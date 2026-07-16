@@ -15,6 +15,21 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/bin/hook-wrapper.sh",
+              "handle-hook",
+              "PreToolUseWatch"
+            ],
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Notification": [

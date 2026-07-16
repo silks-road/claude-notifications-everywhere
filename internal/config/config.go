@@ -200,6 +200,10 @@ func DefaultConfig() *Config {
 				Title: "❓ Needs you",
 				Sound: filepath.Join(pluginRoot, "sounds", "question.mp3"),
 			},
+			"approval_needed": {
+				Title: "🔐 Needs approval",
+				Sound: filepath.Join(pluginRoot, "sounds", "question.mp3"),
+			},
 			"plan_ready": {
 				Title: "📋 Plan",
 				Sound: filepath.Join(pluginRoot, "sounds", "plan-ready.mp3"),
@@ -479,6 +483,7 @@ func (c *Config) Validate() error {
 		"task_complete":         true,
 		"review_complete":       true,
 		"question":              true,
+		"approval_needed":       true,
 		"plan_ready":            true,
 		"session_limit_reached": true,
 		"api_error":             true,
