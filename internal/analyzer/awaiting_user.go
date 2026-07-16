@@ -32,6 +32,30 @@ var awaitingUserPhrases = []string{
 	"please confirm",
 }
 
+// ClassifyFinalMessage classifies a status from a single final assistant
+// message string (used by the desktop/Cowork payload fallback when no
+// transcript is available). Order mirrors the transcript state machine's
+// priority: limit reached > usage warning > awaiting user > completion.
+func ClassifyFinalMessage(text string) Status {
+	if text == "" {
+		return StatusUnknown
+	}
+	msgs := []jsonl.Message{{
+		Type:    "assistant",
+		Message: jsonl.MessageContent{Role: "assistant", Content: []jsonl.Content{{Type: "text", Text: text}}},
+	}}
+	switch {
+	case detectSessionLimitReached(msgs):
+		return StatusSessionLimitReached
+	case detectUsageWarning(msgs):
+		return StatusUsageWarning
+	case awaitingUserResponse(msgs):
+		return StatusQuestion
+	default:
+		return StatusTaskComplete
+	}
+}
+
 // awaitingUserResponse reports whether the final assistant message asks the
 // user for input: it ends with a question, or contains an explicit
 // waiting-on-you phrase. Used to reclassify tool-heavy turns that finish by

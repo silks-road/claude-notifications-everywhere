@@ -624,7 +624,10 @@ func (h *Handler) statusFromPayloadFallback(hookData *HookData) analyzer.Status 
 	}
 	logging.Debug("Transcript unavailable, falling back to last_assistant_message from payload (source=%s)",
 		platform.GetSessionSource())
-	return analyzer.StatusTaskComplete
+	// Detect the real, text-surfaced signals from the final message even
+	// without a transcript, so desktop/Cowork payload-only events still get
+	// the right status instead of a generic completion.
+	return analyzer.ClassifyFinalMessage(hookData.LastAssistantMessage)
 }
 
 // generateMessage generates a notification body and action summary.

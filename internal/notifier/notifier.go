@@ -64,7 +64,7 @@ func New(cfg *config.Config) *Notifier {
 func isTimeSensitiveStatus(status analyzer.Status) bool {
 	switch status {
 	case analyzer.StatusAPIError, analyzer.StatusAPIErrorOverloaded, analyzer.StatusSessionLimitReached,
-		analyzer.StatusApprovalNeeded:
+		analyzer.StatusApprovalNeeded, analyzer.StatusUsageWarning:
 		return true
 	default:
 		return false

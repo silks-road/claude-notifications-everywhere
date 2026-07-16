@@ -192,10 +192,14 @@ func DefaultConfig() *Config {
 				Title: "✅ Done",
 				Sound: filepath.Join(pluginRoot, "sounds", "task-complete.mp3"),
 			},
+			// Four-sound scheme: each category shares one sound so the sound
+			// alone tells you the meaning (done / needs-you / broke / usage).
+			// "done" = task-complete.mp3
 			"review_complete": {
 				Title: "🔍 Review",
-				Sound: filepath.Join(pluginRoot, "sounds", "review-complete.mp3"),
+				Sound: filepath.Join(pluginRoot, "sounds", "task-complete.mp3"),
 			},
+			// "needs you" = question.mp3
 			"question": {
 				Title: "❓ Needs you",
 				Sound: filepath.Join(pluginRoot, "sounds", "question.mp3"),
@@ -206,8 +210,14 @@ func DefaultConfig() *Config {
 			},
 			"plan_ready": {
 				Title: "📋 Plan",
-				Sound: filepath.Join(pluginRoot, "sounds", "plan-ready.mp3"),
+				Sound: filepath.Join(pluginRoot, "sounds", "question.mp3"),
 			},
+			// "usage" = review-complete.mp3 (repurposed as the distinct 4th sound)
+			"usage_warning": {
+				Title: "📊 Usage",
+				Sound: filepath.Join(pluginRoot, "sounds", "review-complete.mp3"),
+			},
+			// "broke" = error.mp3
 			"session_limit_reached": {
 				Title: "⏱️ Session Limit Reached",
 				Sound: filepath.Join(pluginRoot, "sounds", "error.mp3"),
@@ -485,6 +495,7 @@ func (c *Config) Validate() error {
 		"question":              true,
 		"approval_needed":       true,
 		"plan_ready":            true,
+		"usage_warning":         true,
 		"session_limit_reached": true,
 		"api_error":             true,
 		"api_error_overloaded":  true,

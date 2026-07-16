@@ -41,6 +41,7 @@ const (
 	StatusQuestion            Status = "question"
 	StatusPlanReady           Status = "plan_ready"
 	StatusSessionLimitReached Status = "session_limit_reached"
+	StatusUsageWarning        Status = "usage_warning"
 	StatusAPIError            Status = "api_error"
 	StatusAPIErrorOverloaded  Status = "api_error_overloaded"
 	StatusUnknown             Status = "unknown"
@@ -65,6 +66,14 @@ func AnalyzeTranscriptWithMessages(transcriptPath string, cfg *config.Config) (S
 	// This takes precedence over all other status detection
 	if detectSessionLimitReached(messages) {
 		return StatusSessionLimitReached, messages, nil
+	}
+
+	// PRIORITY CHECK 1b: Approaching usage limit (real, server-sourced warning
+	// surfaced in Claude's own message text). Not a percentage estimate — it
+	// fires only when Claude actually warns you. Lower priority than a limit
+	// that has already been reached.
+	if detectUsageWarning(messages) {
+		return StatusUsageWarning, messages, nil
 	}
 
 	// PRIORITY CHECK 2: API errors (uses isApiErrorMessage flag from JSONL)
@@ -188,6 +197,40 @@ func GetStatusForPreToolUse(toolName string) Status {
 }
 
 // detectSessionLimitReached checks if the last assistant messages contain "Session limit reached"
+// usageWarningPhrases are the real "approaching your limit" warnings Claude
+// surfaces in its own message text. Matched case-insensitively. These are
+// server-sourced (Claude only says them when genuinely near a limit), unlike
+// a local token estimate — the accurate percentage/reset data is not exposed
+// on disk (see project notes / GitHub anthropics/claude-code#36056).
+var usageWarningPhrases = []string{
+	"approaching your usage limit",
+	"approaching the usage limit",
+	"approaching your session limit",
+	"approaching your weekly limit",
+	"running low on usage",
+	"usage limit soon",
+	"nearing your usage limit",
+	"close to your usage limit",
+}
+
+// detectUsageWarning checks recent assistant messages for a usage-approaching
+// warning. Kept separate from detectSessionLimitReached (which fires only once
+// the limit is actually hit).
+func detectUsageWarning(messages []jsonl.Message) bool {
+	recentMessages := jsonl.GetLastAssistantMessages(messages, 3)
+	if len(recentMessages) == 0 {
+		return false
+	}
+	for _, text := range jsonl.ExtractTextFromMessages(recentMessages) {
+		for _, phrase := range usageWarningPhrases {
+			if containsIgnoreCase(text, phrase) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func detectSessionLimitReached(messages []jsonl.Message) bool {
 	// Check last 3 assistant messages for the session limit text
 	recentMessages := jsonl.GetLastAssistantMessages(messages, 3)
