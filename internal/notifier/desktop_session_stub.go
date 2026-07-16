@@ -2,9 +2,15 @@
 
 package notifier
 
-// resolveDesktopSessionID maps a CLI session id to the desktop app's own
-// session id. The Claude desktop app deep-link integration is currently
+// resolveDesktopSession maps a CLI session id to the desktop app's own
+// session record. The Claude desktop app integration is currently
 // implemented for macOS only; other platforms fall back to standard focusing.
+func resolveDesktopSession(cliSessionID string) (sessionID, title string) {
+	return "", ""
+}
+
+// resolveDesktopSessionID returns just the desktop app's session id for a
+// CLI session id. See resolveDesktopSession.
 func resolveDesktopSessionID(cliSessionID string) string {
 	return ""
 }

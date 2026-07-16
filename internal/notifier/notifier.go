@@ -116,6 +116,19 @@ func (n *Notifier) SendDesktop(status analyzer.Status, message, sessionID, cwd s
 		}
 	}
 
+	// Desktop (Cowork) sessions: lead the subtitle with the conversation title
+	// from the app's own session records, so the user can tell WHICH chat the
+	// notification is about when several are running at once.
+	if platform.IsDesktopSession() {
+		if _, convTitle := resolveDesktopSession(sessionID); convTitle != "" {
+			if subtitle != "" {
+				subtitle = fmt.Sprintf("%s \u00B7 %s", convTitle, subtitle)
+			} else {
+				subtitle = convTitle
+			}
+		}
+	}
+
 	timeSensitive := isTimeSensitiveStatus(status)
 
 	// Get app icon path if configured

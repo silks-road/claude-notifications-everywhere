@@ -21,6 +21,7 @@ func writeSessionRecord(t *testing.T, dir, sessionID, cliSessionID string, archi
 	rec := map[string]any{
 		"sessionId":      sessionID,
 		"cliSessionId":   cliSessionID,
+		"title":          "Title of " + sessionID,
 		"isArchived":     archived,
 		"lastActivityAt": lastActivity,
 	}
@@ -58,8 +59,12 @@ func TestResolveDesktopSessionID(t *testing.T) {
 		writeSessionRecord(t, nested, "local_"+testCLISessionID, testCLISessionID, false, 200) // mirror, newer
 		writeSessionRecord(t, nested, testAppSessionID, testCLISessionID, false, 100)          // original, older
 
-		if got := resolveDesktopSessionID(testCLISessionID); got != testAppSessionID {
-			t.Errorf("resolveDesktopSessionID() = %q, want %q", got, testAppSessionID)
+		gotID, gotTitle := resolveDesktopSession(testCLISessionID)
+		if gotID != testAppSessionID {
+			t.Errorf("resolveDesktopSession() id = %q, want %q", gotID, testAppSessionID)
+		}
+		if want := "Title of " + testAppSessionID; gotTitle != want {
+			t.Errorf("resolveDesktopSession() title = %q, want %q", gotTitle, want)
 		}
 	})
 

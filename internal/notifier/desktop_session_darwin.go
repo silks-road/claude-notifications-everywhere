@@ -16,6 +16,7 @@ import (
 type desktopSessionRecord struct {
 	SessionID    string `json:"sessionId"`
 	CLISessionID string `json:"cliSessionId"`
+	Title        string `json:"title"`
 	IsArchived   bool   `json:"isArchived"`
 	LastActivity int64  `json:"lastActivityAt"`
 }
@@ -31,23 +32,23 @@ var desktopSessionsDir = func() string {
 	return filepath.Join(home, "Library", "Application Support", "Claude", "claude-code-sessions")
 }
 
-// resolveDesktopSessionID maps the CLI-level session id received by hooks to
-// the desktop app's own session id (e.g. "local_<other-uuid>"), which is what
-// the app's /cowork/<id> route expects.
+// resolveDesktopSession maps the CLI-level session id received by hooks to
+// the desktop app's own session record: its session id (e.g.
+// "local_<other-uuid>") and the conversation title shown in the app sidebar.
 //
 // A conversation created in the app has sessionId != "local_"+cliSessionId;
 // a session imported via the claude://resume deep link is named exactly
-// "local_"+cliSessionId (a mirror). Prefer the former so clicks land on the
+// "local_"+cliSessionId (a mirror). Prefer the former so callers target the
 // original conversation, and fall back to the mirror only if it is all we have.
-func resolveDesktopSessionID(cliSessionID string) string {
+func resolveDesktopSession(cliSessionID string) (sessionID, title string) {
 	root := desktopSessionsDir()
 	if root == "" || cliSessionID == "" {
-		return ""
+		return "", ""
 	}
 
 	mirrorID := "local_" + cliSessionID
-	best := ""
-	var bestActivity int64 = -1
+	var best desktopSessionRecord
+	bestActivity := int64(-1)
 
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(d.Name(), ".json") {
@@ -66,20 +67,27 @@ func resolveDesktopSessionID(cliSessionID string) string {
 		}
 		// Prefer any non-mirror record; among candidates pick the most recent.
 		isMirror := rec.SessionID == mirrorID
-		bestIsMirror := best == mirrorID
+		bestIsMirror := best.SessionID == mirrorID
 		switch {
-		case best == "":
-			best, bestActivity = rec.SessionID, rec.LastActivity
+		case best.SessionID == "":
+			best, bestActivity = rec, rec.LastActivity
 		case bestIsMirror && !isMirror:
-			best, bestActivity = rec.SessionID, rec.LastActivity
+			best, bestActivity = rec, rec.LastActivity
 		case bestIsMirror == isMirror && rec.LastActivity > bestActivity:
-			best, bestActivity = rec.SessionID, rec.LastActivity
+			best, bestActivity = rec, rec.LastActivity
 		}
 		return nil
 	})
 
-	if best == "" {
+	if best.SessionID == "" {
 		logging.Debug("No desktop session record found for cli session %s", cliSessionID)
 	}
-	return best
+	return best.SessionID, best.Title
+}
+
+// resolveDesktopSessionID returns just the desktop app's session id for a
+// CLI session id. See resolveDesktopSession.
+func resolveDesktopSessionID(cliSessionID string) string {
+	id, _ := resolveDesktopSession(cliSessionID)
+	return id
 }
