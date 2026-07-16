@@ -177,6 +177,29 @@ If the binary auto-update didn't work (e.g. no internet at the time), run `/clau
 
 ## Supported Notification Types
 
+What each one looks like (desktop app sessions show the conversation name; the 🔐 approval one carries live **Always allow / Allow once** buttons that answer the pending permission card for you):
+
+<table>
+  <tr>
+    <td><img src="docs/images/cowork-notification.svg" alt="✅ Done — task finished, one-sentence summary"/></td>
+    <td><img src="docs/images/cowork-question.svg" alt="❓ Needs you — Claude is waiting on your answer"/></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/notif-approval.svg" alt="🔐 Needs approval — with Always allow and Allow once buttons"/></td>
+    <td><img src="docs/images/notif-plan.svg" alt="📋 Plan — a plan is ready for approval"/></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/notif-usage.svg" alt="📊 Usage — approaching your usage limit"/></td>
+    <td><img src="docs/images/notif-review.svg" alt="🔍 Review — code review finished"/></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/notif-error.svg" alt="🔴 API Error — Claude stopped on an error"/></td>
+    <td><img src="docs/images/notif-limit.svg" alt="⏱️ Session Limit Reached"/></td>
+  </tr>
+</table>
+
+Each category has its own sound, so you can tell **done** / **needs you** / **broke** / **usage** apart without looking.
+
 | Status | Icon | Description | Trigger |
 |--------|------|-------------|---------|
 | Task Complete | ✅ | Main task completed | Stop/SubagentStop hooks (state machine detects active tools like Write/Edit/Bash, or ExitPlanMode followed by tool usage). *This fork:* reclassified as Question when the final message asks the user something ("approval needed", trailing "?") |
