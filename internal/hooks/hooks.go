@@ -652,7 +652,34 @@ func (h *Handler) generateMessage(hookData *HookData, status analyzer.Status, me
 	if body == "" {
 		body = summary.GenerateSimple(status, h.cfg)
 	}
+
+	// Asking statuses on desktop sessions: the body must show what is being
+	// ASKED. The summary engine describes completed work ("Task 9 completed,
+	// four-sound scheme live"), which reads as a mismatch under a "Needs you"
+	// title. Feed the raw final assistant message instead — the desktop
+	// notifier's summarization picks the question sentence — and drop the
+	// action segments (work stats are noise on a needs-you alert).
+	if platform.IsDesktopSession() && isAskingStatus(status) {
+		raw := hookData.LastAssistantMessage
+		if raw == "" && len(messages) > 0 {
+			raw = jsonl.ExtractRecentText(jsonl.GetLastAssistantMessages(messages, 1), 1)
+		}
+		if raw != "" {
+			body = raw
+			actions = ""
+		}
+	}
+
 	return body, actions
+}
+
+// isAskingStatus reports whether the status means the user is being waited on.
+func isAskingStatus(status analyzer.Status) bool {
+	switch status {
+	case analyzer.StatusQuestion, analyzer.StatusApprovalNeeded, analyzer.StatusPlanReady:
+		return true
+	}
+	return false
 }
 
 // joinMessageParts mirrors summary.appendActions: joins body and actions with a
