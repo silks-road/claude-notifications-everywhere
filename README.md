@@ -1,10 +1,10 @@
 <h1 align="center">Claude Notifications (plugin)</h1>
 
-[![Ubuntu CI](https://github.com/777genius/claude-notifications-go/workflows/Ubuntu%20CI/badge.svg)](https://github.com/777genius/claude-notifications-go/actions)
-[![macOS CI](https://github.com/777genius/claude-notifications-go/workflows/macOS%20CI/badge.svg)](https://github.com/777genius/claude-notifications-go/actions)
-[![Windows CI](https://github.com/777genius/claude-notifications-go/workflows/Windows%20CI/badge.svg)](https://github.com/777genius/claude-notifications-go/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/777genius/claude-notifications-go)](https://goreportcard.com/report/github.com/777genius/claude-notifications-go)
-[![codecov](https://codecov.io/gh/777genius/claude-notifications-go/branch/main/graph/badge.svg)](https://codecov.io/gh/777genius/claude-notifications-go)
+[![Ubuntu CI](https://github.com/silks-road/claude-notifications-go/workflows/Ubuntu%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-go/actions)
+[![macOS CI](https://github.com/silks-road/claude-notifications-go/workflows/macOS%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-go/actions)
+[![Windows CI](https://github.com/silks-road/claude-notifications-go/workflows/Windows%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-go/actions)
+
+> **🖥️ This fork adds [Claude Desktop app (Cowork) support](#️-claude-desktop-cowork-support-this-fork)** — notifications from desktop app sessions, conversation names in every alert, and click-to-open-the-exact-conversation. Forked from [777genius/claude-notifications-go](https://github.com/777genius/claude-notifications-go).
 
 <div>
 <table>
@@ -22,6 +22,7 @@ Smart notifications for Claude Code with click-to-focus, git branch display, and
 
 ## Table of Contents
 
+  - [Claude Desktop (Cowork) Support — this fork](#️-claude-desktop-cowork-support-this-fork)
   - [Features](#features)
   - [Installation](#installation)
     - [Prerequisites](#prerequisites)
@@ -40,6 +41,56 @@ Smart notifications for Claude Code with click-to-focus, git branch display, and
   - [Troubleshooting](#troubleshooting)
   - [Documentation](#documentation)
   - [License](#license)
+
+## 🖥️ Claude Desktop (Cowork) Support (this fork)
+
+Everything below is on top of the upstream plugin, which only knew about terminals. If you run Claude Code inside the **Claude desktop app** (Cowork "Home" tasks or the "Code" tab), this fork makes notifications first-class there:
+
+<p align="center"><img src="docs/images/cowork-notification.svg" width="620" alt="Example desktop notification: '✅ Done — Notifications plugin expansion' with a one-sentence summary"/></p>
+
+- **Desktop app sessions detected automatically** — hooks fired from the app (instead of a terminal) get desktop-appropriate behavior; terminal sessions keep all upstream behavior.
+- **The alert tells you *which chat*** — title format `✅ Done — <conversation name>`, resolved live from the app's own session records. Running several Home + Code sessions at once stays legible.
+- **One-sentence summaries** — the body is the outcome sentence of Claude's reply (markdown stripped, capped ~110 chars), not a wall of raw text.
+- **Click opens the exact conversation** — not just the app. There is no public deep link for this (`claude://resume` *imports a duplicate* of the session — don't use it), so the plugin drives the app's UI through the macOS Accessibility API: activate app → switch Home/Code area if needed → press the conversation's sidebar item. Falls back to plain app activation if anything is missing, and launches the app if it isn't running.
+
+### Setup (macOS)
+
+1. **Build from source** (upstream's installer downloads upstream binaries, which lack these features):
+   ```bash
+   git clone https://github.com/silks-road/claude-notifications-go.git
+   cd claude-notifications-go && make build
+   ```
+2. **Install as a plugin** — in Claude Code / the desktop app:
+   ```
+   /plugin marketplace add /path/to/claude-notifications-go
+   /plugin install claude-notifications-go@claude-notifications-go
+   ```
+   then copy the freshly built binary over the cached one whenever you rebuild:
+   ```bash
+   cp bin/claude-notifications ~/.claude/plugins/cache/claude-notifications-go/claude-notifications-go/*/bin/claude-notifications-darwin-arm64
+   ```
+3. **Grant permissions** (each once):
+   - *System Settings → Notifications → Claude Notifier*: **Allow**, style **Alerts** (persistent).
+   - *System Settings → Privacy & Security → Accessibility*: enable **ClaudeNotifier** — this is what lets a notification click press the right conversation in the sidebar. Until granted, clicks still focus the app.
+   - Using Focus modes? Add both **Claude** and **Claude Notifier** to the allowed apps.
+
+### How click-to-conversation works
+
+```mermaid
+flowchart LR
+    A[Claude finishes a task] --> B[Stop hook fires<br/>with session id]
+    B --> C[Map session id to the app's<br/>conversation via its session records]
+    C --> D[Notification shows<br/>'Done — chat name' + summary]
+    D -->|click| E[focus-session:<br/>activate app]
+    E --> F{Conversation button<br/>in sidebar?}
+    F -->|no| G[Press 'Code' area button,<br/>retry]
+    F -->|yes| H[Press it — exact chat opens]
+    G --> F
+```
+
+**Known limitations:** macOS only (Apple Silicon tested); navigation visibly "walks" through the UI for a second (it is pressing real buttons — a native `claude://open-session` deep link from Anthropic would remove this); conversations renamed mid-task are still found (records are read at click time), but a conversation missing from the sidebar entirely can't be pressed and falls back to app focus.
+
+---
 
 ## Features
 

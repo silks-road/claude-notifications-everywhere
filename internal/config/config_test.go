@@ -177,7 +177,7 @@ func TestGetStatusInfo(t *testing.T) {
 
 	info, exists := cfg.GetStatusInfo("task_complete")
 	assert.True(t, exists)
-	assert.Contains(t, info.Title, "Completed")
+	assert.Contains(t, info.Title, "Done")
 
 	_, exists = cfg.GetStatusInfo("nonexistent")
 	assert.False(t, exists)

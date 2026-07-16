@@ -486,8 +486,8 @@ func TestGetDefaultMessage(t *testing.T) {
 		status   string
 		expected string
 	}{
-		{"task_complete", "Completed"},
-		{"question", "Question"},
+		{"task_complete", "Done"},
+		{"question", "Needs you"},
 		{"plan_ready", "Plan"},
 	}
 
@@ -631,7 +631,7 @@ func TestGenerateFromTranscript_NonexistentFile(t *testing.T) {
 	result := GenerateFromTranscript("/nonexistent/path.jsonl", analyzer.StatusTaskComplete, cfg)
 
 	// Should fallback to default message
-	if !strings.Contains(result, "Completed") {
+	if !strings.Contains(result, "Done") {
 		t.Errorf("Should return default message for nonexistent file, got: %s", result)
 	}
 }
@@ -647,7 +647,7 @@ func TestGenerateFromTranscript_EmptyTranscript(t *testing.T) {
 	result := GenerateFromTranscript(transcriptPath, analyzer.StatusTaskComplete, cfg)
 
 	// Should fallback to default message
-	if !strings.Contains(result, "Completed") {
+	if !strings.Contains(result, "Done") {
 		t.Errorf("Should return default message for empty transcript, got: %s", result)
 	}
 }
@@ -701,8 +701,8 @@ func TestGenerateSimple(t *testing.T) {
 		status   analyzer.Status
 		expected string
 	}{
-		{analyzer.StatusTaskComplete, "Completed"},
-		{analyzer.StatusQuestion, "Question"},
+		{analyzer.StatusTaskComplete, "Done"},
+		{analyzer.StatusQuestion, "Needs you"},
 		{analyzer.StatusPlanReady, "Plan"},
 		{analyzer.StatusReviewComplete, "Review"},
 		{analyzer.StatusSessionLimitReached, "Session Limit Reached"},

@@ -103,13 +103,14 @@ func (n *Notifier) SendDesktop(status analyzer.Status, message, sessionID, cwd s
 		_, convTitle = resolveDesktopSession(sessionID)
 	}
 
-	// Build clean title (status only + session name)
-	// Format: "✅ Completed [peak]" or "✅ Completed"
-	// The generated session codename is dropped when the conversation title
-	// already identifies the chat — it is only meaningful for terminal
-	// sessions (tmux windows etc.).
+	// Build clean title.
+	// Desktop sessions: "✅ Done — <conversation title>" (one glance says what
+	// happened and in which chat; the generated session codename is dropped).
+	// Terminal sessions keep the codename format: "✅ Done [peak]".
 	title := statusInfo.Title
-	if sessionName != "" && convTitle == "" {
+	if convTitle != "" {
+		title = fmt.Sprintf("%s — %s", title, convTitle)
+	} else if sessionName != "" {
 		title = fmt.Sprintf("%s [%s]", title, sessionName)
 	}
 
@@ -126,15 +127,13 @@ func (n *Notifier) SendDesktop(status analyzer.Status, message, sessionID, cwd s
 		}
 	}
 
-	// Desktop (Cowork) sessions: lead the subtitle with the conversation title
-	// so the user can tell WHICH chat the notification is about when several
-	// are running at once.
+	// Desktop (Cowork) sessions: the conversation title is already in the
+	// notification title, and the branch/folder line is terminal-era noise
+	// there \u2014 drop the subtitle entirely and summarize the body to one clean
+	// sentence.
 	if convTitle != "" {
-		if subtitle != "" {
-			subtitle = fmt.Sprintf("%s \u00B7 %s", convTitle, subtitle)
-		} else {
-			subtitle = convTitle
-		}
+		subtitle = ""
+		cleanMessage = summarizeMessage(cleanMessage)
 	}
 
 	timeSensitive := isTimeSensitiveStatus(status)

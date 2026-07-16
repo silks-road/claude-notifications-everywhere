@@ -189,7 +189,7 @@ func DefaultConfig() *Config {
 		},
 		Statuses: map[string]StatusInfo{
 			"task_complete": {
-				Title: "✅ Completed",
+				Title: "✅ Done",
 				Sound: filepath.Join(pluginRoot, "sounds", "task-complete.mp3"),
 			},
 			"review_complete": {
@@ -197,7 +197,7 @@ func DefaultConfig() *Config {
 				Sound: filepath.Join(pluginRoot, "sounds", "review-complete.mp3"),
 			},
 			"question": {
-				Title: "❓ Question",
+				Title: "❓ Needs you",
 				Sound: filepath.Join(pluginRoot, "sounds", "question.mp3"),
 			},
 			"plan_ready": {

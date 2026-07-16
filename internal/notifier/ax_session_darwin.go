@@ -69,14 +69,14 @@ static NSString *copyButtonName(AXUIElementRef el) {
 	CFTypeRef ref = NULL;
 	if (AXUIElementCopyAttributeValue(el, CFSTR("AXTitle"), &ref) == kAXErrorSuccess && ref) {
 		if (CFGetTypeID(ref) == CFStringGetTypeID() && CFStringGetLength((CFStringRef)ref) > 0) {
-			return (__bridge_transfer NSString *)ref;
+			return [(__bridge NSString *)ref autorelease];
 		}
 		CFRelease(ref);
 	}
 	ref = NULL;
 	if (AXUIElementCopyAttributeValue(el, CFSTR("AXDescription"), &ref) == kAXErrorSuccess && ref) {
 		if (CFGetTypeID(ref) == CFStringGetTypeID()) {
-			return (__bridge_transfer NSString *)ref;
+			return [(__bridge NSString *)ref autorelease];
 		}
 		CFRelease(ref);
 	}
@@ -216,6 +216,7 @@ import "C"
 
 import (
 	"fmt"
+	"os/exec"
 	"time"
 	"unsafe"
 
@@ -234,7 +235,21 @@ func FocusDesktopSessionByCLIID(cliSessionID string) error {
 	defer C.free(unsafe.Pointer(cBundleID))
 	pid := int(C.axSessionFindPID(cBundleID))
 	if pid < 0 {
-		return fmt.Errorf("Claude desktop app is not running")
+		// App not running: launch it, then wait for it to come up so the
+		// sidebar press below can still find the conversation.
+		if err := exec.Command("open", "-b", platform.DesktopAppBundleID).Run(); err != nil {
+			return fmt.Errorf("Claude desktop app is not running and could not be launched: %w", err)
+		}
+		launchDeadline := time.Now().Add(15 * time.Second)
+		for pid < 0 {
+			if time.Now().After(launchDeadline) {
+				return fmt.Errorf("Claude desktop app did not start in time")
+			}
+			time.Sleep(500 * time.Millisecond)
+			pid = int(C.axSessionFindPID(cBundleID))
+		}
+		// Give the freshly launched app a moment to render its first window.
+		time.Sleep(2 * time.Second)
 	}
 
 	// Always bring the app forward first — matches previous click behavior
@@ -260,7 +275,6 @@ func FocusDesktopSessionByCLIID(cliSessionID string) error {
 	// active, so after a couple of misses (user is in Home) switch areas and
 	// keep looking.
 	deadline := time.Now().Add(8 * time.Second)
-	attempts := 0
 	switchedArea := false
 	for {
 		switch C.pressSessionButtonInApp(C.int(pid), cTitle) {
@@ -270,8 +284,9 @@ func FocusDesktopSessionByCLIID(cliSessionID string) error {
 		case -1:
 			return fmt.Errorf("accessibility permission not granted")
 		}
-		attempts++
-		if attempts >= 2 && !switchedArea {
+		// Claude Code conversations are only listed while the "Code" area is
+		// active; on the first miss (user is in Home) switch immediately.
+		if !switchedArea {
 			switchedArea = true
 			cCode := C.CString("Code")
 			if C.pressExactButtonInApp(C.int(pid), cCode) == 1 {
@@ -282,6 +297,6 @@ func FocusDesktopSessionByCLIID(cliSessionID string) error {
 		if time.Now().After(deadline) {
 			return fmt.Errorf("conversation %q not found in app UI (app left focused)", title)
 		}
-		time.Sleep(400 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 	}
 }
