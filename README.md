@@ -1,8 +1,9 @@
-<h1 align="center">Claude Notifications (plugin)</h1>
+<h1 align="center">Claude Notifications Everywhere</h1>
+<p align="center"><i>Notifications from Claude Code wherever you are — terminal, desktop app (Cowork), phone, and (soon) browser.</i></p>
 
-[![Ubuntu CI](https://github.com/silks-road/claude-notifications-4-terminal-app-phone/workflows/Ubuntu%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-4-terminal-app-phone/actions)
-[![macOS CI](https://github.com/silks-road/claude-notifications-4-terminal-app-phone/workflows/macOS%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-4-terminal-app-phone/actions)
-[![Windows CI](https://github.com/silks-road/claude-notifications-4-terminal-app-phone/workflows/Windows%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-4-terminal-app-phone/actions)
+[![Ubuntu CI](https://github.com/silks-road/claude-notifications-everywhere/workflows/Ubuntu%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-everywhere/actions)
+[![macOS CI](https://github.com/silks-road/claude-notifications-everywhere/workflows/macOS%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-everywhere/actions)
+[![Windows CI](https://github.com/silks-road/claude-notifications-everywhere/workflows/Windows%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-everywhere/actions)
 
 > **🖥️ This fork adds [Claude Desktop app (Cowork) support](#claude-desktop-cowork-support-this-fork)** — notifications from desktop app sessions, conversation names in every alert, and click-to-open-the-exact-conversation. Forked from [777genius/claude-notifications-go](https://github.com/777genius/claude-notifications-go).
 
@@ -50,7 +51,7 @@ Everything below is on top of the upstream plugin, which only knew about termina
 
 1. **Build from source** (upstream's installer downloads upstream binaries, which lack these features):
    ```bash
-   git clone https://github.com/silks-road/claude-notifications-4-terminal-app-phone.git
+   git clone https://github.com/silks-road/claude-notifications-everywhere.git
    cd claude-notifications-go && make build
    ```
 2. **Install as a plugin** — in Claude Code / the desktop app:
