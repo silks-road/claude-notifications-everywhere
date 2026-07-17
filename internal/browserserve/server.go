@@ -107,7 +107,11 @@ func (s *Server) withCORS(next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Auth-Token")
 			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			// Chrome Private Network Access: extension→loopback preflights ask
+			// for this; without it the fetch is silently blocked.
+			w.Header().Set("Access-Control-Allow-Private-Network", "true")
 		}
+		logging.Debug("listener request: %s %s origin=%q auth=%v", r.Method, r.URL.Path, origin, r.Header.Get("X-Auth-Token") != "")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -153,6 +157,11 @@ func (s *Server) handleEvent(w http.ResponseWriter, r *http.Request) {
 	status := analyzer.Status(ev.Status)
 	if status == "" {
 		status = analyzer.ClassifyFinalMessage(ev.LastMessage)
+	}
+	// A completion with no readable message text (content script not injected
+	// in that tab yet) is still a completed turn.
+	if status == analyzer.StatusUnknown {
+		status = analyzer.StatusTaskComplete
 	}
 
 	if err := s.notifier.SendBrowserNotification(status, ev.Title, ev.LastMessage, ev.URL); err != nil {
