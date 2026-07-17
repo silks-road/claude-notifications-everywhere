@@ -6,8 +6,8 @@
 [![Windows CI](https://github.com/silks-road/claude-notifications-everywhere/workflows/Windows%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-everywhere/actions)
 
 <p align="center">
-  <img src="docs/images/cowork-notification.svg" width="560" alt="Notification: '✅ Done - Recipe app' with a one-sentence summary"/><br/>
-  <img src="docs/images/cowork-question.svg" width="560" alt="Notification: '❓ Input needed - Recipe app' showing the actual question being asked"/>
+  <img src="docs/images/cowork-notification.svg" width="560" alt="Notification: '✅ Done - Wanted poster generator' with a one-sentence summary"/><br/>
+  <img src="docs/images/cowork-question.svg" width="560" alt="Notification: '❓ Input needed - Grand Line route planner' showing the actual question being asked"/>
 </p>
 
 ## What this actually does
@@ -17,7 +17,7 @@ You run Claude in several places — a terminal, the desktop app, a browser tab.
 - 🖥️ **Works on every surface** — terminal, **Claude desktop app (Cowork)**, **claude.ai in Chrome** (via the bundled [extension](extension/)), and **your phone** (via webhooks)
 - 🎯 **Click lands on the exact conversation** — not just the app: it selects the right chat in the desktop app's sidebar, or focuses the right browser tab (never opening duplicates, even with split views)
 - 🔐 **Approve without opening anything** — when Claude needs permission, the notification carries **"Always allow"** and **"Allow once"** buttons that answer the real request in the app
-- 🧠 **The alert tells you what and where** — `✅ Done - Recipe app` when finished; `❓ Input needed - Recipe app` *with the actual question as the message* when Claude is waiting on you
+- 🧠 **The alert tells you what and where** — `✅ Done - Wanted poster generator` when finished; `❓ Input needed - Grand Line route planner` *with the actual question as the message* when Claude is waiting on you
 - 🔊 **Four sounds you learn once** — *done* / *input needed* / *broke* / *approaching limit* — so your ears triage before your eyes do
 - 📊 **Warns before you hit usage limits** — from Claude's real warnings, honestly (no invented percentages)
 
