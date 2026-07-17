@@ -3,7 +3,7 @@
   "name": "Claude Notifications (browser)",
   "version": "1.0.0",
   "description": "Desktop notifications when Claude finishes or needs you in claude.ai — part of claude-notifications-everywhere.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "tabs"],
   "host_permissions": [
     "https://claude.ai/*",
     "http://127.0.0.1:52741/*"

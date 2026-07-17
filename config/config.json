@@ -1,62 +1,62 @@
 {
-  "notifications": {
-    "desktop": {
-      "enabled": true,
-      "sound": true,
-      "volume": 1.0,
-      "appIcon": "${CLAUDE_PLUGIN_ROOT}/claude_icon.png",
-      "clickToFocus": true,
-      "terminalBundleId": ""
-    },
-    "webhook": {
-      "enabled": false,
-      "preset": "slack",
-      "url": "",
-      "chat_id": "",
-      "format": "json",
-      "headers": {}
-    },
-    "suppressQuestionAfterTaskCompleteSeconds": 12,
-    "suppressQuestionAfterAnyNotificationSeconds": 7,
-    "suppressForSubagents": true,
-    "suppressFilters": []
+ "notifications": {
+  "desktop": {
+   "enabled": true,
+   "sound": true,
+   "volume": 1.0,
+   "appIcon": "${CLAUDE_PLUGIN_ROOT}/claude_icon.png",
+   "clickToFocus": true,
+   "terminalBundleId": ""
   },
-  "statuses": {
-    "task_complete": {
-      "title": "✅ Done",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/task-complete.mp3"
-    },
-    "review_complete": {
-      "title": "🔍 Review",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/task-complete.mp3"
-    },
-    "question": {
-      "title": "❓ Needs you",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/question.mp3"
-    },
-    "plan_ready": {
-      "title": "📋 Plan",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/question.mp3"
-    },
-    "session_limit_reached": {
-      "title": "⏱️ Session Limit Reached",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/error.mp3"
-    },
-    "api_error": {
-      "title": "🔴 API Error: 401",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/error.mp3"
-    },
-    "api_error_overloaded": {
-      "title": "🔴 API Error",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/error.mp3"
-    },
-    "approval_needed": {
-      "title": "🔐 Needs approval",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/question.mp3"
-    },
-    "usage_warning": {
-      "title": "📊 Usage",
-      "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/review-complete.mp3"
-    }
+  "webhook": {
+   "enabled": false,
+   "preset": "slack",
+   "url": "",
+   "chat_id": "",
+   "format": "json",
+   "headers": {}
+  },
+  "suppressQuestionAfterTaskCompleteSeconds": 12,
+  "suppressQuestionAfterAnyNotificationSeconds": 7,
+  "suppressForSubagents": true,
+  "suppressFilters": []
+ },
+ "statuses": {
+  "task_complete": {
+   "title": "✅ Done",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/task-complete.mp3"
+  },
+  "review_complete": {
+   "title": "🔍 Review done",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/task-complete.mp3"
+  },
+  "question": {
+   "title": "❓ Needs you",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/question.mp3"
+  },
+  "plan_ready": {
+   "title": "📋 Plan ready",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/question.mp3"
+  },
+  "session_limit_reached": {
+   "title": "⏱️ Limit reached",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/error.mp3"
+  },
+  "api_error": {
+   "title": "🔴 Error",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/error.mp3"
+  },
+  "api_error_overloaded": {
+   "title": "🔴 Error",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/error.mp3"
+  },
+  "approval_needed": {
+   "title": "🔐 Needs approval",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/question.mp3"
+  },
+  "usage_warning": {
+   "title": "📊 Approaching limit",
+   "sound": "${CLAUDE_PLUGIN_ROOT}/sounds/review-complete.mp3"
   }
+ }
 }

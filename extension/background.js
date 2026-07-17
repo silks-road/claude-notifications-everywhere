@@ -14,6 +14,36 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 });
 
+// Multi-tab correctness: clicking a notification runs `open <chat url>`, which
+// makes Chrome open a NEW tab even when that conversation is already open
+// (possibly among several claude.ai tabs / split views). When a freshly created
+// tab navigates to a chat URL that another tab already shows, close the new
+// tab and focus the existing one instead — the click always lands on the
+// exact conversation, never a duplicate.
+const newTabIds = new Set();
+chrome.tabs.onCreated.addListener((tab) => newTabIds.add(tab.id));
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (!changeInfo.url || !newTabIds.has(tabId)) return;
+  const m = changeInfo.url.match(/^https:\/\/claude\.ai\/chat\/([0-9a-f-]+)/i);
+  if (!m) { newTabIds.delete(tabId); return; }
+  const conversationPath = "/chat/" + m[1];
+
+  const tabs = await chrome.tabs.query({ url: "https://claude.ai/*" });
+  const existing = tabs.find(
+    (t) => t.id !== tabId && new URL(t.url).pathname === conversationPath
+  );
+  newTabIds.delete(tabId);
+  if (existing) {
+    await chrome.tabs.remove(tabId);
+    await chrome.tabs.update(existing.id, { active: true });
+    await chrome.windows.update(existing.windowId, { focused: true });
+  }
+});
+
+// Tabs stop being "new" once they finish their first load.
+chrome.tabs.onRemoved.addListener((tabId) => newTabIds.delete(tabId));
+
 async function forward(payload) {
   const { token } = await chrome.storage.local.get("token");
   if (!token) {

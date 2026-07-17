@@ -27,7 +27,7 @@ func (n *Notifier) SendBrowserNotification(status analyzer.Status, title, messag
 
 	notifTitle := statusInfo.Title
 	if title != "" {
-		notifTitle = fmt.Sprintf("%s — %s", statusInfo.Title, title)
+		notifTitle = fmt.Sprintf("%s - %s", statusInfo.Title, title)
 	}
 	body := summarizeMessage(message, status)
 

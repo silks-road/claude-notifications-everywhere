@@ -8,8 +8,8 @@
 > **🖥️ This fork adds [Claude Desktop app (Cowork) support](#claude-desktop-cowork-support-this-fork)** — notifications from desktop app sessions, conversation names in every alert, and click-to-open-the-exact-conversation. Forked from [777genius/claude-notifications-go](https://github.com/777genius/claude-notifications-go).
 
 <p align="center">
-  <img src="docs/images/cowork-notification.svg" width="560" alt="Notification: '✅ Done — Notifications plugin expansion' with a one-sentence summary"/><br/>
-  <img src="docs/images/cowork-question.svg" width="560" alt="Notification: '❓ Needs you — Irish Rail' asking which date range to use"/>
+  <img src="docs/images/cowork-notification.svg" width="560" alt="Notification: '✅ Done - Notifications plugin expansion' with a one-sentence summary"/><br/>
+  <img src="docs/images/cowork-question.svg" width="560" alt="Notification: '❓ Needs you - Irish Rail' asking which date range to use"/>
 </p>
 
 Smart notifications for Claude Code with click-to-focus, git branch display, and webhook integrations.
@@ -43,7 +43,7 @@ Smart notifications for Claude Code with click-to-focus, git branch display, and
 Everything below is on top of the upstream plugin, which only knew about terminals. If you run Claude Code inside the **Claude desktop app** (Cowork "Home" tasks or the "Code" tab), this fork makes notifications first-class there:
 
 - **Desktop app sessions detected automatically** — hooks fired from the app (instead of a terminal) get desktop-appropriate behavior; terminal sessions keep all upstream behavior.
-- **The alert tells you *which chat*** — title format `✅ Done — <conversation name>`, resolved live from the app's own session records. Running several Home + Code sessions at once stays legible.
+- **The alert tells you *which chat*** — title format `✅ Done - <conversation name>`, resolved live from the app's own session records. Running several Home + Code sessions at once stays legible.
 - **One-sentence summaries** — the body is the outcome sentence of Claude's reply (markdown stripped, capped ~110 chars), not a wall of raw text.
 - **Click opens the exact conversation** — not just the app. There is no public deep link for this (`claude://resume` *imports a duplicate* of the session — don't use it), so the plugin drives the app's UI through the macOS Accessibility API: activate app → switch Home/Code area if needed → press the conversation's sidebar item. Falls back to plain app activation if anything is missing, and launches the app if it isn't running.
 
@@ -102,7 +102,7 @@ Prefer Telegram, Slack, Discord, or Teams? See the [webhook docs](docs/webhooks/
 flowchart LR
     A[Claude finishes a task] --> B[Stop hook fires<br/>with session id]
     B --> C[Map session id to the app's<br/>conversation via its session records]
-    C --> D[Notification shows<br/>'Done — chat name' + summary]
+    C --> D[Notification shows<br/>'Done - chat name' + summary]
     D -->|click| E[focus-session:<br/>activate app]
     E --> F{Conversation button<br/>in sidebar?}
     F -->|no| G[Press 'Code' area button,<br/>retry]
@@ -205,19 +205,19 @@ What each one looks like (desktop app sessions show the conversation name; the �
 
 <table>
   <tr>
-    <td><img src="docs/images/cowork-notification.svg" alt="✅ Done — task finished, one-sentence summary"/></td>
-    <td><img src="docs/images/cowork-question.svg" alt="❓ Needs you — Claude is waiting on your answer"/></td>
+    <td><img src="docs/images/cowork-notification.svg" alt="✅ Done - task finished, one-sentence summary"/></td>
+    <td><img src="docs/images/cowork-question.svg" alt="❓ Needs you - Claude is waiting on your answer"/></td>
   </tr>
   <tr>
-    <td><img src="docs/images/notif-approval.svg" alt="🔐 Needs approval — with Always allow and Allow once buttons"/></td>
-    <td><img src="docs/images/notif-plan.svg" alt="📋 Plan — a plan is ready for approval"/></td>
+    <td><img src="docs/images/notif-approval.svg" alt="🔐 Needs approval - with Always allow and Allow once buttons"/></td>
+    <td><img src="docs/images/notif-plan.svg" alt="📋 Plan ready - a plan is ready for approval"/></td>
   </tr>
   <tr>
-    <td><img src="docs/images/notif-usage.svg" alt="📊 Usage — approaching your usage limit"/></td>
-    <td><img src="docs/images/notif-review.svg" alt="🔍 Review — code review finished"/></td>
+    <td><img src="docs/images/notif-usage.svg" alt="📊 Approaching limit - approaching your usage limit"/></td>
+    <td><img src="docs/images/notif-review.svg" alt="🔍 Review done - code review finished"/></td>
   </tr>
   <tr>
-    <td><img src="docs/images/notif-error.svg" alt="🔴 API Error — Claude stopped on an error"/></td>
+    <td><img src="docs/images/notif-error.svg" alt="🔴 Error - Claude stopped on an error"/></td>
     <td><img src="docs/images/notif-limit.svg" alt="⏱️ Session Limit Reached"/></td>
   </tr>
 </table>

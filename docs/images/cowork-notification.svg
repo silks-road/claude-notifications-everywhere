@@ -1,13 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="132" viewBox="0 0 720 132" font-family="-apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2e2e30"/>
-      <stop offset="1" stop-color="#252527"/>
-    </linearGradient>
-  </defs>
-  <!-- notification card -->
-  <rect x="8" y="8" width="704" height="116" rx="22" fill="url(#bg)" stroke="#48484a" stroke-width="1"/>
-  <!-- app icon -->
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e2e30"/><stop offset="1" stop-color="#252527"/></linearGradient></defs>
+<rect x="8" y="8" width="704" height="116" rx="22" fill="url(#bg)" stroke="#48484a" stroke-width="1"/>
   <rect x="28" y="30" width="72" height="72" rx="16" fill="#D97757"/>
   <g transform="translate(64,66)">
     <g fill="#faf5f0">
@@ -24,11 +17,8 @@
       </g>
     </g>
   </g>
-  <!-- title -->
-  <text x="122" y="52" font-size="19" font-weight="700" fill="#ffffff">✅ Done — Notifications plugin expansion</text>
-  <!-- body -->
-  <text x="122" y="82" font-size="17" fill="#c9c9cd">Added conversation titles to notifications and rebuilt the click</text>
-  <text x="122" y="104" font-size="17" fill="#c9c9cd">behaviour.</text>
-  <!-- timestamp -->
-  <text x="676" y="34" font-size="13" fill="#8e8e93" text-anchor="end">now</text>
+<text x="122" y="52" font-size="19" font-weight="700" fill="#ffffff">✅ Done - Notifications plugin expansion</text>
+<text x="122" y="82" font-size="17" fill="#c9c9cd">Added conversation titles to notifications and</text>
+<text x="122" y="104" font-size="17" fill="#c9c9cd">rebuilt the click behaviour.</text>
+<text x="676" y="34" font-size="13" fill="#8e8e93" text-anchor="end">now</text>
 </svg>

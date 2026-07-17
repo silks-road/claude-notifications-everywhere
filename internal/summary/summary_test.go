@@ -705,7 +705,7 @@ func TestGenerateSimple(t *testing.T) {
 		{analyzer.StatusQuestion, "Needs you"},
 		{analyzer.StatusPlanReady, "Plan"},
 		{analyzer.StatusReviewComplete, "Review"},
-		{analyzer.StatusSessionLimitReached, "Session Limit Reached"},
+		{analyzer.StatusSessionLimitReached, "Limit reached"},
 	}
 
 	for _, tt := range tests {

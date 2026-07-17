@@ -112,7 +112,7 @@ func (n *Notifier) SendDesktop(status analyzer.Status, message, sessionID, cwd s
 	// Terminal sessions keep the codename format: "✅ Done [peak]".
 	title := statusInfo.Title
 	if convTitle != "" {
-		title = fmt.Sprintf("%s — %s", title, convTitle)
+		title = fmt.Sprintf("%s - %s", title, convTitle)
 	} else if sessionName != "" && !platform.IsDesktopSession() {
 		title = fmt.Sprintf("%s [%s]", title, sessionName)
 	}

@@ -196,7 +196,7 @@ func DefaultConfig() *Config {
 			// alone tells you the meaning (done / needs-you / broke / usage).
 			// "done" = task-complete.mp3
 			"review_complete": {
-				Title: "🔍 Review",
+				Title: "🔍 Review done",
 				Sound: filepath.Join(pluginRoot, "sounds", "task-complete.mp3"),
 			},
 			// "needs you" = question.mp3
@@ -209,25 +209,25 @@ func DefaultConfig() *Config {
 				Sound: filepath.Join(pluginRoot, "sounds", "question.mp3"),
 			},
 			"plan_ready": {
-				Title: "📋 Plan",
+				Title: "📋 Plan ready",
 				Sound: filepath.Join(pluginRoot, "sounds", "question.mp3"),
 			},
 			// "usage" = review-complete.mp3 (repurposed as the distinct 4th sound)
 			"usage_warning": {
-				Title: "📊 Usage",
+				Title: "📊 Approaching limit",
 				Sound: filepath.Join(pluginRoot, "sounds", "review-complete.mp3"),
 			},
 			// "broke" = error.mp3
 			"session_limit_reached": {
-				Title: "⏱️ Session Limit Reached",
+				Title: "⏱️ Limit reached",
 				Sound: filepath.Join(pluginRoot, "sounds", "error.mp3"),
 			},
 			"api_error": {
-				Title: "🔴 API Error: 401",
+				Title: "🔴 Error",
 				Sound: filepath.Join(pluginRoot, "sounds", "error.mp3"),
 			},
 			"api_error_overloaded": {
-				Title: "🔴 API Error",
+				Title: "🔴 Error",
 				Sound: filepath.Join(pluginRoot, "sounds", "error.mp3"),
 			},
 		},
