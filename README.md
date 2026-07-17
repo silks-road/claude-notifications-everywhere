@@ -189,7 +189,7 @@ Run these slash commands in the Claude Code chat, not in your system terminal:
 
 ```text
 # 1) Add marketplace
-/plugin marketplace add 777genius/claude-notifications-go
+/plugin marketplace add silks-road/claude-notifications-everywhere
 # 2) Install plugin
 /plugin install claude-notifications-go@claude-notifications-go
 # 3) Restart Claude Code
