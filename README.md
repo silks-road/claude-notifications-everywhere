@@ -96,6 +96,18 @@ Every notification type above — including 🔐 approvals and 📊 usage — ca
 
 Prefer Telegram, Slack, Discord, or Teams? See the [webhook docs](docs/webhooks/README.md). One honest limitation: phone alerts are **receive-only** — the approval buttons and click-to-open-conversation only work on the Mac itself.
 
+### 🌐 Browser (claude.ai) notifications
+
+Chats on **claude.ai in Chrome** get the same treatment via a small companion extension included in this repo ([`extension/`](extension/)): same titles, same sounds, click focuses the **exact tab** — even with several claude.ai tabs or split views open (duplicates are closed automatically). Detection is network-level (the extension observes claude.ai's own response stream ending), so site redesigns don't break it, and everything stays on your machine: the extension talks only to a token-authenticated listener on `127.0.0.1`.
+
+Setup (~3 minutes): run `claude-notifications install-browser-listener`, load the `extension/` folder via `chrome://extensions` → Load unpacked, paste the printed token into the extension popup. Full steps and troubleshooting: [extension/README.md](extension/README.md).
+
+### Troubleshooting (macOS quirks worth knowing)
+
+- **macOS re-prompts for Accessibility although the toggle is ON** — happens after the ClaudeNotifier app is rebuilt/updated: the grant is tied to the old binary's signature. Fix: System Settings → Privacy & Security → Accessibility → remove ClaudeNotifier (−), then re-add the one inside the plugin's `bin/` folder (drag it in from Finder; reveal it with `open -R <path>`).
+- **"Item from unidentified developer" notice when installing the browser listener** — that's macOS noting the locally-built binary was registered as a background service (LaunchAgent). Expected for a from-source build; the code is what you cloned.
+- **Extension stops noticing turns after an update** — reload the extension card in `chrome://extensions`, then reload your claude.ai tabs (content scripts only enter pages loaded after the extension).
+
 ### How click-to-conversation works
 
 ```mermaid
