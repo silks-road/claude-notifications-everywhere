@@ -93,6 +93,10 @@ func main() {
 			os.Exit(1)
 		}
 		runApprovalWatch(os.Args[2], os.Args[3], os.Args[4])
+	case "serve":
+		runBrowserServe()
+	case "install-browser-listener":
+		runInstallBrowserListener()
 	case "play-sound":
 		runPlaySound(os.Args[2:])
 	case "daemon", "--daemon":
