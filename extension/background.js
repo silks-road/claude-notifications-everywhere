@@ -44,7 +44,16 @@ async function onTurnComplete(details) {
   });
 }
 
-chrome.webRequest.onCompleted.addListener((d) => { onTurnComplete(d); }, COMPLETION_FILTER);
+chrome.webRequest.onCompleted.addListener((d) => {
+  // Visible heartbeat: flash the badge so detection is observable without DevTools.
+  chrome.action.setBadgeText({ text: "✓" });
+  chrome.action.setBadgeBackgroundColor({ color: "#178a3a" });
+  setTimeout(() => chrome.action.setBadgeText({ text: "" }), 4000);
+  onTurnComplete(d).catch((e) => {
+    chrome.action.setBadgeText({ text: "E" });
+    chrome.action.setBadgeBackgroundColor({ color: "#c0392b" });
+  });
+}, COMPLETION_FILTER);
 
 // Multi-tab correctness: clicking a notification runs `open <chat url>`, which
 // makes Chrome open a NEW tab even when that conversation is already open
