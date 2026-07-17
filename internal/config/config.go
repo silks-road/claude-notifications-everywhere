@@ -143,12 +143,28 @@ const defaultSuppressQuestionAfterAnyNotificationSeconds = 7
 
 // DefaultConfig returns a config with sensible defaults
 func DefaultConfig() *Config {
+	return defaultConfig("")
+}
+
+func defaultConfig(resolvedPluginRoot string) *Config {
 	// Get plugin root from environment, fallback to current directory
-	pluginRoot := platform.ExpandEnv("${CLAUDE_PLUGIN_ROOT}")
-	if pluginRoot == "" || pluginRoot == "${CLAUDE_PLUGIN_ROOT}" {
+	pluginRoot := resolvedPluginRoot
+	if pluginRoot == "" {
+		pluginRoot = platform.ExpandEnv("${CLAUDE_PLUGIN_ROOT}")
+	}
+	if isUnresolvedPluginRoot(pluginRoot) {
 		pluginRoot = "."
 	}
+	return buildDefaultConfig(pluginRoot)
+}
 
+func isUnresolvedPluginRoot(pluginRoot string) bool {
+	return pluginRoot == "" ||
+		pluginRoot == "$CLAUDE_PLUGIN_ROOT" ||
+		pluginRoot == "${CLAUDE_PLUGIN_ROOT}"
+}
+
+func buildDefaultConfig(pluginRoot string) *Config {
 	return &Config{
 		Notifications: NotificationsConfig{
 			Desktop: DesktopConfig{
@@ -237,9 +253,13 @@ func DefaultConfig() *Config {
 // Load loads configuration from a file
 // If the file doesn't exist, returns default config
 func Load(path string) (*Config, error) {
+	return load(path, "")
+}
+
+func load(path, pluginRoot string) (*Config, error) {
 	// If path doesn't exist, use default config
 	if !platform.FileExists(path) {
-		return DefaultConfig(), nil
+		return defaultConfig(pluginRoot), nil
 	}
 
 	data, err := os.ReadFile(path)
@@ -247,25 +267,88 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	config := DefaultConfig()
+	config := defaultConfigForLoad(pluginRoot)
+	statusDefaults := make(map[string]StatusInfo, len(config.Statuses))
+	for status, info := range config.Statuses {
+		statusDefaults[status] = info
+	}
 	if err := json.Unmarshal(data, config); err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+	if err := mergeStatusOverrides(data, config, statusDefaults); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	// Expand environment variables in paths
-	config.Notifications.Desktop.AppIcon = platform.ExpandEnv(config.Notifications.Desktop.AppIcon)
+	config.Notifications.Desktop.AppIcon = expandPath(config.Notifications.Desktop.AppIcon, pluginRoot)
 	config.Notifications.Webhook.URL = platform.ExpandEnv(config.Notifications.Webhook.URL)
 
 	// Expand environment variables in sound paths
 	for status, info := range config.Statuses {
-		info.Sound = platform.ExpandEnv(info.Sound)
+		info.Sound = expandPath(info.Sound, pluginRoot)
 		config.Statuses[status] = info
 	}
 
 	// Apply defaults for missing fields
-	config.ApplyDefaults()
+	config.applyDefaults(pluginRoot)
 
 	return config, nil
+}
+
+func defaultConfigForLoad(pluginRoot string) *Config {
+	resolvedRoot := pluginRoot
+	if resolvedRoot == "" {
+		resolvedRoot = os.Getenv("CLAUDE_PLUGIN_ROOT")
+	}
+	if isUnresolvedPluginRoot(resolvedRoot) {
+		return buildDefaultConfig(".")
+	}
+
+	// Keep defaults symbolic until expandPath processes config values. Injecting
+	// a resolved root here would make literal '$' segments expand a second time.
+	return buildDefaultConfig("${CLAUDE_PLUGIN_ROOT}")
+}
+
+// mergeStatusOverrides preserves defaults for fields omitted from an individual
+// status object. encoding/json otherwise replaces map values with zero structs.
+func mergeStatusOverrides(data []byte, config *Config, defaults map[string]StatusInfo) error {
+	var rawConfig struct {
+		Statuses map[string]json.RawMessage `json:"statuses"`
+	}
+	if err := json.Unmarshal(data, &rawConfig); err != nil {
+		return err
+	}
+	if rawConfig.Statuses == nil {
+		return nil
+	}
+	if config.Statuses == nil {
+		config.Statuses = make(map[string]StatusInfo)
+	}
+	for status, rawStatus := range rawConfig.Statuses {
+		info := defaults[status]
+		if err := json.Unmarshal(rawStatus, &info); err != nil {
+			return fmt.Errorf("invalid status %q: %w", status, err)
+		}
+		config.Statuses[status] = info
+	}
+	return nil
+}
+
+func expandEnv(value, pluginRoot string) string {
+	return os.Expand(value, func(key string) string {
+		if key == "CLAUDE_PLUGIN_ROOT" && pluginRoot != "" {
+			return pluginRoot
+		}
+		return os.Getenv(key)
+	})
+}
+
+func expandPath(value, pluginRoot string) string {
+	expanded := expandEnv(value, pluginRoot)
+	if expanded == "" {
+		return ""
+	}
+	return filepath.Clean(expanded)
 }
 
 // GetStableConfigDir returns the stable config directory outside the plugin cache.
@@ -304,7 +387,7 @@ func LoadFromPluginRoot(pluginRoot string) (*Config, error) {
 	}
 	if stableErr == nil {
 		if platform.FileExists(stablePath) {
-			cfg, err := Load(stablePath)
+			cfg, err := load(stablePath, pluginRoot)
 			if err != nil {
 				// Corrupted stable config — warn and fall through to old path
 				msg := fmt.Sprintf("warning: failed to load config from %s: %v, trying legacy path", stablePath, err)
@@ -319,13 +402,13 @@ func LoadFromPluginRoot(pluginRoot string) (*Config, error) {
 	// 2. Try old path (pluginRoot/config/config.json)
 	oldPath := filepath.Join(pluginRoot, "config", "config.json")
 	if platform.FileExists(oldPath) {
-		cfg, err := Load(oldPath)
+		cfg, err := load(oldPath, pluginRoot)
 		if err != nil {
 			// Corrupted old config — warn, return defaults (non-fatal)
 			msg := fmt.Sprintf("warning: corrupted config at %s, using defaults", oldPath)
 			fmt.Fprintln(os.Stderr, msg)
 			logging.Warn("%s", msg)
-			return DefaultConfig(), nil
+			return defaultConfig(pluginRoot), nil
 		}
 
 		// Migrate to stable path (best-effort)
@@ -341,7 +424,7 @@ func LoadFromPluginRoot(pluginRoot string) (*Config, error) {
 	}
 
 	// 3. Neither path has config — return defaults
-	return DefaultConfig(), nil
+	return defaultConfig(pluginRoot), nil
 }
 
 // migrateConfig copies config from oldPath to stablePath atomically.
@@ -363,14 +446,14 @@ func migrateConfig(oldPath, stablePath string) error {
 		return err
 	}
 	tmpPath := tmpFile.Name()
-	defer os.Remove(tmpPath) // cleanup on any error path
+	defer func() { _ = os.Remove(tmpPath) }() // cleanup on any error path
 
 	if _, err := tmpFile.Write(data); err != nil {
-		tmpFile.Close()
+		_ = tmpFile.Close()
 		return err
 	}
 	if err := tmpFile.Sync(); err != nil {
-		tmpFile.Close()
+		_ = tmpFile.Close()
 		return err
 	}
 	if err := tmpFile.Close(); err != nil {
@@ -384,6 +467,10 @@ func migrateConfig(oldPath, stablePath string) error {
 
 // ApplyDefaults fills in missing fields with default values
 func (c *Config) ApplyDefaults() {
+	c.applyDefaults("")
+}
+
+func (c *Config) applyDefaults(pluginRoot string) {
 	// Desktop defaults
 	if c.Notifications.Desktop.Volume == 0 {
 		c.Notifications.Desktop.Volume = 1.0 // Default to full volume
@@ -413,7 +500,7 @@ func (c *Config) ApplyDefaults() {
 	}
 
 	// Status defaults
-	defaults := DefaultConfig()
+	defaults := defaultConfig(pluginRoot)
 	if c.Statuses == nil {
 		c.Statuses = defaults.Statuses
 	} else {
