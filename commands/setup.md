@@ -5,7 +5,7 @@ allowed-tools: Bash
 
 # 🚀 Guided Setup
 
-You are walking the user through setting up Claude Notifications Everywhere. Your job: run the automated setup, then guide the user through each remaining manual step **one at a time**, confirming each before moving on. Be warm, brief, and concrete.
+You are walking the user through setting up Claude Vivre Card. Your job: run the automated setup, then guide the user through each remaining manual step **one at a time**, confirming each before moving on. Be warm, brief, and concrete.
 
 ## Step 1 — Run the automated setup
 

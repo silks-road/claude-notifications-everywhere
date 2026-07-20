@@ -1,9 +1,9 @@
-<h1 align="center">Claude Notifications Everywhere</h1>
-<p align="center"><i>Notifications that don't just tell you Claude finished — they take you to the exact conversation, and let you act without opening it.</i></p>
+<h1 align="center">Claude Vivre Card</h1>
+<p align="center"><i>In One Piece, a vivre card points to where someone is and how they're doing. These notifications do that for your Claude sessions — and take you straight to the exact conversation.</i></p>
 
-[![Ubuntu CI](https://github.com/silks-road/claude-notifications-everywhere/workflows/Ubuntu%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-everywhere/actions)
-[![macOS CI](https://github.com/silks-road/claude-notifications-everywhere/workflows/macOS%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-everywhere/actions)
-[![Windows CI](https://github.com/silks-road/claude-notifications-everywhere/workflows/Windows%20CI/badge.svg)](https://github.com/silks-road/claude-notifications-everywhere/actions)
+[![Ubuntu CI](https://github.com/silks-road/claude-vivre-card/workflows/Ubuntu%20CI/badge.svg)](https://github.com/silks-road/claude-vivre-card/actions)
+[![macOS CI](https://github.com/silks-road/claude-vivre-card/workflows/macOS%20CI/badge.svg)](https://github.com/silks-road/claude-vivre-card/actions)
+[![Windows CI](https://github.com/silks-road/claude-vivre-card/workflows/Windows%20CI/badge.svg)](https://github.com/silks-road/claude-vivre-card/actions)
 
 <p align="center">
   <img src="docs/images/cowork-notification.svg?v=2" width="560" alt="Notification: '✅ Done - Wanted poster generator' with a one-sentence summary"/><br/>
@@ -72,7 +72,7 @@ Pick your system: [🍎 macOS](#-macos-setup) · [🪟 Windows](#-windows-setup)
 No terminal, no git. Type **three commands into any Claude chat**, one at a time:
 
 ```
-/plugin marketplace add silks-road/claude-notifications-everywhere
+/plugin marketplace add silks-road/claude-vivre-card
 ```
 ```
 /plugin install claude-notifications-go@claude-notifications-go
@@ -106,7 +106,7 @@ That's it. Ask a Claude session to do something and enjoy the ping.
 Same idea, fewer steps — Windows toasts need no permission grants. Type into any Claude chat, one at a time:
 
 ```
-/plugin marketplace add silks-road/claude-notifications-everywhere
+/plugin marketplace add silks-road/claude-vivre-card
 ```
 ```
 /plugin install claude-notifications-go@claude-notifications-go
@@ -123,7 +123,7 @@ Setup sends a hello notification; if you see it, you're done. If you don't, one 
 
 #### 🛠️ For tinkerers
 
-- **One-line terminal install:** `curl -fsSL https://raw.githubusercontent.com/silks-road/claude-notifications-everywhere/main/bin/bootstrap.sh | bash`
+- **One-line terminal install:** `curl -fsSL https://raw.githubusercontent.com/silks-road/claude-vivre-card/main/bin/bootstrap.sh | bash`
 - **Build from source:** clone, `make build`, then replace the cached binary at `~/.claude/plugins/cache/claude-notifications-go/claude-notifications-go/<version>/bin/claude-notifications-darwin-arm64` (delete first, copy, then `codesign --force -s -` — in-place copies corrupt the cached signature).
 - **Browser listener without the guided flow:** `claude-notifications install-browser-listener` (prints the extension token; LaunchAgent keeps it running).
 - All knobs live in `~/.claude/claude-notifications-go/config.json` — see [Configuration](#configuration).

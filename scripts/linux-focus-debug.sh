@@ -3,7 +3,7 @@
 
 set -uo pipefail
 
-REPO="silks-road/claude-notifications-everywhere"
+REPO="silks-road/claude-vivre-card"
 RAW_URL="https://raw.githubusercontent.com/${REPO}/main/scripts/linux-focus-debug.sh"
 MARKETPLACE_NAME="claude-notifications-go"
 PLUGIN_NAME="claude-notifications-go"

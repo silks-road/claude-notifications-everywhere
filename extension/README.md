@@ -1,6 +1,6 @@
 # Claude Notifications — browser extension
 
-Desktop notifications when Claude finishes or needs you in **claude.ai** (browser), using the same notification pipeline (titles, four sounds, click-to-open) as the rest of `claude-notifications-everywhere`.
+Desktop notifications when Claude finishes or needs you in **claude.ai** (browser), using the same notification pipeline (titles, four sounds, click-to-open) as the rest of `claude-vivre-card`.
 
 ## How it works
 
