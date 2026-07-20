@@ -36,9 +36,6 @@ You run Claude in several places — a terminal, the desktop app, a browser tab.
     - [Troubleshooting macOS quirks](#troubleshooting-macos-quirks-worth-knowing)
   - [Features](#features)
   - [Installation](#installation)
-    - [Prerequisites](#prerequisites)
-    - [Quick Install (Recommended)](#quick-install-recommended)
-    - [Manual Install](#manual-install)
     - [Updating](#updating)
   - [Supported Notification Types](#supported-notification-types)
   - [Platform Support](#platform-support)
@@ -176,76 +173,17 @@ flowchart LR
 
 ## Installation
 
-### Prerequisites
+**macOS (everyone):** follow [Setup — Claude does almost everything](#setup-macos--claude-does-almost-everything) above — three chat commands, Claude guides the rest. No terminal needed.
 
-- Claude Code
-- **Windows users:** Git Bash (included with [Git for Windows](https://git-scm.com/download/win))
-- **macOS/Linux users:** No additional software required
-
-### Quick Install (Recommended)
-
-> **macOS users:** the three-command install in [the fork setup](#setup-macos--claude-does-almost-everything) needs no terminal at all. **Linux/Windows users:** this fork publishes macOS binaries only — use [upstream](https://github.com/777genius/claude-notifications-go) or build from source.
-
-One command to install everything:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/silks-road/claude-notifications-everywhere/main/bin/bootstrap.sh | bash
-```
-
-> Windows users: open Git Bash from the Start menu and run this command there. Do not run the `curl ... | bash` command from PowerShell or Windows Terminal if `bash` opens WSL, because that targets Linux paths and binaries instead of Windows.
-
-Then restart Claude Code and optionally run `/claude-notifications-go:settings` to configure sounds.
-
-The binary is downloaded once and cached locally. You can re-run `/claude-notifications-go:settings` anytime to reconfigure.
-
-> If the bootstrap script doesn't work for your environment, use the [Manual Install](#manual-install) steps below inside Claude Code.
-
-### Manual Install
-
-<details>
-<summary>Step-by-step installation inside Claude Code (if bootstrap doesn't work)</summary>
-
-Run these slash commands in the Claude Code chat, not in your system terminal:
-
-```text
-# 1) Add marketplace
-/plugin marketplace add silks-road/claude-notifications-everywhere
-# 2) Install plugin
-/plugin install claude-notifications-go@claude-notifications-go
-# 3) Restart Claude Code
-# 4) Download binary
-/claude-notifications-go:init
-# 5) (Optional) Configure sounds and settings
-/claude-notifications-go:settings
-```
-
-</details>
-
-> Having issues with installation? See [Troubleshooting](#troubleshooting).
+**Linux / Windows:** this fork publishes macOS binaries only; its extra features are macOS-specific. Use [upstream](https://github.com/777genius/claude-notifications-go) (full Linux/Windows support) or build this fork from source. Windows terminal users need Git Bash (included with [Git for Windows](https://git-scm.com/download/win)).
 
 ### Updating
 
-Run the same command as for installation — it will update both the plugin and the binary:
+Inside Claude: run `/plugin`, select **Marketplaces** → `claude-notifications-go` → **Update marketplace**, then **Installed** → `claude-notifications-go` → **Update now**. Binaries refresh automatically on the next notification (re-run `/claude-notifications-go:init` if offline at the time). Your settings in `~/.claude/claude-notifications-go/config.json` survive updates.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/silks-road/claude-notifications-everywhere/main/bin/bootstrap.sh | bash
-```
+Terminal alternative: re-run the bootstrap one-liner from [For tinkerers](#-for-tinkerers).
 
-Then restart Claude Code to apply the new version. Your settings in `~/.claude/claude-notifications-go/config.json` are preserved across updates.
-
-<details>
-<summary>Manual update (if bootstrap didn't work)</summary>
-
-Claude Code also periodically checks for plugin updates automatically. Binaries are updated on the next hook invocation when a version mismatch is detected.
-
-To update manually via Claude Code UI:
-
-1. Run `/plugin`, select **Marketplaces**, choose `claude-notifications-go`, then select **Update marketplace**
-2. Select **Installed**, choose `claude-notifications-go`, then select **Update now**
-
-If the binary auto-update didn't work (e.g. no internet at the time), run `/claude-notifications-go:init` to download it manually. If hook definitions changed in the new version, restart Claude Code to apply them.
-
-</details>
+> Having installation issues? See [Troubleshooting](#troubleshooting) and [macOS quirks](#troubleshooting-macos-quirks-worth-knowing).
 
 ## Supported Notification Types
 
