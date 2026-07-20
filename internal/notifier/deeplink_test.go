@@ -135,3 +135,53 @@ func TestBuildDesktopDeepLinkArgs(t *testing.T) {
 		}
 	})
 }
+
+func TestCurrentFocusedDesktopSession(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "main.log")
+	orig := desktopAppLogPath
+	desktopAppLogPath = func() string { return logPath }
+	t.Cleanup(func() { desktopAppLogPath = orig })
+
+	write := func(content string) {
+		if err := os.WriteFile(logPath, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("last focused session wins", func(t *testing.T) {
+		write("x [CCD] LocalSessions.setFocusedSession: sessionId=local_aaa\n" +
+			"x [CCD] LocalSessions.setFocusedSession: sessionId=local_bbb\n")
+		if got := currentFocusedDesktopSession(); got != "local_bbb" {
+			t.Errorf("got %q, want local_bbb", got)
+		}
+	})
+
+	t.Run("null means nothing focused", func(t *testing.T) {
+		write("x LocalSessions.setFocusedSession: sessionId=local_aaa\n" +
+			"x LocalSessions.setFocusedSession: sessionId=null\n")
+		if got := currentFocusedDesktopSession(); got != "" {
+			t.Errorf("got %q, want empty", got)
+		}
+	})
+
+	t.Run("no lines fails open", func(t *testing.T) {
+		write("nothing relevant here\n")
+		if got := currentFocusedDesktopSession(); got != "" {
+			t.Errorf("got %q, want empty", got)
+		}
+	})
+
+	t.Run("viewed only when focused matches wrapper", func(t *testing.T) {
+		root := withSessionsDir(t)
+		writeSessionRecord(t, root, testAppSessionID, testCLISessionID, false, 100)
+		write("x LocalSessions.setFocusedSession: sessionId=" + testAppSessionID + "\n")
+		if !isDesktopSessionViewed(testCLISessionID) {
+			t.Error("expected viewed=true when focused id matches")
+		}
+		write("x LocalSessions.setFocusedSession: sessionId=local_other\n")
+		if isDesktopSessionViewed(testCLISessionID) {
+			t.Error("expected viewed=false when another conversation is focused")
+		}
+	})
+}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/777genius/claude-notifications/internal/logging"
@@ -30,38 +31,57 @@ func desktopAppIsFrontmost() bool {
 	return ok && front == platform.DesktopAppBundleID
 }
 
+// setFocusedSessionRe extracts the session id from the desktop app's
+// "LocalSessions.setFocusedSession: sessionId=<id|null>" log lines — the app
+// emits one on every conversation switch, making the LAST occurrence the
+// ground truth for what is on screen.
+var setFocusedSessionRe = regexp.MustCompile(`LocalSessions\.setFocusedSession: sessionId=(\S+)`)
+
+// currentFocusedDesktopSession returns the app-session id currently shown in
+// the desktop app, from the tail of the app log. Returns "" when unknown
+// (no line in the tail, log missing, or sessionId=null).
+func currentFocusedDesktopSession() string {
+	logPath := desktopAppLogPath()
+	if logPath == "" {
+		return ""
+	}
+	info, err := os.Stat(logPath)
+	if err != nil {
+		return ""
+	}
+	const tailBytes = 256 * 1024
+	offset := info.Size() - tailBytes
+	if offset < 0 {
+		offset = 0
+	}
+	data, err := readFileFrom(logPath, offset)
+	if err != nil {
+		return ""
+	}
+	matches := setFocusedSessionRe.FindAllSubmatch(data, -1)
+	if len(matches) == 0 {
+		return ""
+	}
+	last := string(matches[len(matches)-1][1])
+	if last == "null" {
+		return ""
+	}
+	return last
+}
+
 // isDesktopSessionViewed reports whether the conversation for cliSessionID is
-// the one currently shown in the desktop app, judged by it having the most
-// recent lastFocusedAt across all session records. Used to suppress
-// notifications for the conversation the user is actively looking at.
-// Fails closed to "not viewed" (notify) on any uncertainty.
+// the one currently shown in the desktop app. Uses the app's own
+// setFocusedSession log lines — the previous lastFocusedAt-file heuristic was
+// written on LEAVING a conversation, so the chat the user just left looked
+// "viewed" and its notifications were wrongly suppressed. Fails open to
+// "not viewed" (notify) on any uncertainty.
 func isDesktopSessionViewed(cliSessionID string) bool {
-	root := desktopSessionsDir()
-	if root == "" || cliSessionID == "" {
+	focused := currentFocusedDesktopSession()
+	if focused == "" || cliSessionID == "" {
 		return false
 	}
-	var target, maxFocused int64
-	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(d.Name(), ".json") {
-			return nil
-		}
-		data, readErr := os.ReadFile(path)
-		if readErr != nil {
-			return nil
-		}
-		var rec desktopSessionRecord
-		if json.Unmarshal(data, &rec) != nil || rec.IsArchived {
-			return nil
-		}
-		if rec.LastFocused > maxFocused {
-			maxFocused = rec.LastFocused
-		}
-		if rec.CLISessionID == cliSessionID && rec.LastFocused > target {
-			target = rec.LastFocused
-		}
-		return nil
-	})
-	return target > 0 && target >= maxFocused
+	wrapperID, _ := resolveDesktopSession(cliSessionID)
+	return wrapperID != "" && wrapperID == focused
 }
 
 // desktopSessionsDir returns the root the desktop app stores session metadata
