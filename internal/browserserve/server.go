@@ -5,6 +5,7 @@
 package browserserve
 
 import (
+	"bytes"
 	"crypto/subtle"
 	"encoding/json"
 	"fmt"
@@ -44,6 +45,11 @@ type Server struct {
 
 	mu       sync.Mutex
 	lastSeen map[string]string // conversationId → last notified message (dedupe)
+
+	// focusCh carries conversation ids from notification clicks to the
+	// extension's long-poll (/wait-focus), so the browser that ran the
+	// session focuses its own tab.
+	focusCh chan string
 }
 
 // TokenPath returns the file storing the shared auth token. Created on install;
@@ -72,6 +78,7 @@ func New(cfg *config.Config, token string) *Server {
 		notifier: notifier.New(cfg),
 		token:    token,
 		lastSeen: map[string]string{},
+		focusCh:  make(chan string, 8),
 	}
 }
 
@@ -83,6 +90,8 @@ func (s *Server) ListenAndServe(port int) error {
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	})
 	mux.HandleFunc("/event", s.handleEvent)
+	mux.HandleFunc("/focus", s.handleFocus)
+	mux.HandleFunc("/wait-focus", s.handleWaitFocus)
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	ln, err := net.Listen("tcp", addr)
@@ -167,16 +176,96 @@ func (s *Server) handleEvent(w http.ResponseWriter, r *http.Request) {
 		status = analyzer.StatusTaskComplete
 	}
 
-	// The notification itself is rendered by the extension (chrome.notifications)
-	// so the click is handled inside the SAME browser/profile that ran the
-	// session — a macOS-level "open URL" would hit the default browser, which
-	// may be a different browser or Claude account entirely. The Mac side
-	// contributes the sound and the classified title/body.
-	title, body := s.notifier.BrowserNotificationContent(status, ev.Title, ev.LastMessage)
-	s.notifier.PlayStatusSound(status)
+	// The banner is posted via ClaudeNotifier — the identity the user already
+	// allows through macOS Focus — NOT via the browser (whose notifications
+	// Focus rightly filters). The click runs request-browser-focus, which
+	// feeds /wait-focus: the extension long-polling it focuses the exact tab
+	// in ITS OWN browser, so clicks never land in the default browser.
+	if err := s.notifier.SendBrowserNotificationWithClick(status, ev.Title, ev.LastMessage, ev.ConversationID); err != nil {
+		logging.Warn("browser notification failed: %v", err)
+		http.Error(w, "notify failed", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	resp := map[string]any{"ok": true, "notify": true, "title": title, "message": body}
-	_ = json.NewEncoder(w).Encode(resp)
+	_, _ = w.Write([]byte(`{"ok":true}`))
+}
+
+// handleFocus receives a conversation id from a notification click (posted by
+// the request-browser-focus subcommand) and queues it for the extension.
+func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	got := r.Header.Get("X-Auth-Token")
+	if len(got) == 0 || subtle.ConstantTimeCompare([]byte(got), []byte(s.token)) != 1 {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var body struct {
+		ConversationID string `json:"conversationId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ConversationID == "" {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	select {
+	case s.focusCh <- body.ConversationID:
+	default: // queue full: drop oldest, keep newest
+		select {
+		case <-s.focusCh:
+		default:
+		}
+		s.focusCh <- body.ConversationID
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"ok":true}`))
+}
+
+// handleWaitFocus long-polls until a notification click requests a tab focus
+// (or ~25s pass). The extension re-polls immediately after each response.
+func (s *Server) handleWaitFocus(w http.ResponseWriter, r *http.Request) {
+	got := r.Header.Get("X-Auth-Token")
+	if len(got) == 0 || subtle.ConstantTimeCompare([]byte(got), []byte(s.token)) != 1 {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	select {
+	case id := <-s.focusCh:
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"conversationId": id})
+	case <-time.After(25 * time.Second):
+		w.WriteHeader(http.StatusNoContent)
+	case <-r.Context().Done():
+	}
+}
+
+// RequestFocus posts a conversation id to the running listener's /focus
+// endpoint. Called by the request-browser-focus subcommand from a
+// notification click.
+func RequestFocus(conversationID string) error {
+	token := LoadToken()
+	if token == "" {
+		return fmt.Errorf("no browser-listener token")
+	}
+	body, _ := json.Marshal(map[string]string{"conversationId": conversationID})
+	req, err := http.NewRequest(http.MethodPost,
+		fmt.Sprintf("http://127.0.0.1:%d/focus", DefaultPort), bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Auth-Token", token)
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("focus request returned %d", resp.StatusCode)
+	}
+	return nil
 }

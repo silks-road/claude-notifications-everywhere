@@ -53,33 +53,17 @@ async function onTurnComplete(details) {
     url: "https://claude.ai/chat/" + conversationId,
   });
 
-  // The listener classifies and returns the uniform title/body; the
-  // notification is rendered HERE so its click is handled by THIS browser —
-  // an OS-level "open URL" would go to the default browser, which may be a
-  // different browser or a different Claude account.
-  if (result && result.notify) {
-    chrome.notifications.create("claude-chat:" + conversationId, {
-      type: "basic",
-      iconUrl: "icon128.png",
-      title: result.title || "Claude",
-      message: result.message || "",
-      priority: 1,
-    }, () => {
-      if (chrome.runtime.lastError) {
-        chrome.action.setBadgeText({ text: "N!" });
-        chrome.action.setBadgeBackgroundColor({ color: "#c0392b" });
-      }
-    });
-  }
+  // The banner itself is posted on the Mac side via ClaudeNotifier (the
+  // identity the user allows through macOS Focus). Clicks flow back to this
+  // browser through the /wait-focus long-poll below.
 }
 
-// Notification click → focus the exact tab for that conversation (or open one
-// here, never in another browser).
-chrome.notifications.onClicked.addListener(async (notifId) => {
-  if (!notifId.startsWith("claude-chat:")) return;
-  const conversationPath = "/chat/" + notifId.slice("claude-chat:".length);
-  chrome.notifications.clear(notifId);
-
+// Focus long-poll: notification clicks (handled on the Mac by ClaudeNotifier)
+// queue a conversation id on the listener; we hold a rolling request against
+// /wait-focus and focus the exact tab here — in THIS browser — when one lands.
+// The in-flight fetch also keeps the service worker alive.
+async function focusConversation(conversationId) {
+  const conversationPath = "/chat/" + conversationId;
   const tabs = await chrome.tabs.query({ url: "https://claude.ai/*" });
   const existing = tabs.find((t) => new URL(t.url).pathname === conversationPath);
   if (existing) {
@@ -89,7 +73,29 @@ chrome.notifications.onClicked.addListener(async (notifId) => {
     const tab = await chrome.tabs.create({ url: "https://claude.ai" + conversationPath });
     await chrome.windows.update(tab.windowId, { focused: true });
   }
-});
+}
+
+async function pollFocusLoop() {
+  for (;;) {
+    try {
+      const { token } = await chrome.storage.local.get("token");
+      if (!token) { await new Promise((r) => setTimeout(r, 10000)); continue; }
+      const resp = await fetch("http://127.0.0.1:52741/wait-focus", {
+        headers: { "X-Auth-Token": token },
+      });
+      if (resp.status === 200) {
+        const { conversationId } = await resp.json();
+        if (conversationId) await focusConversation(conversationId);
+      } else if (resp.status !== 204) {
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+    } catch (_) {
+      // Listener down or asleep — back off briefly.
+      await new Promise((r) => setTimeout(r, 10000));
+    }
+  }
+}
+pollFocusLoop();
 
 chrome.webRequest.onCompleted.addListener((d) => {
   // Visible heartbeat: flash the badge so detection is observable without DevTools.

@@ -2,6 +2,8 @@ package notifier
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/777genius/claude-notifications/internal/analyzer"
@@ -29,6 +31,20 @@ func (n *Notifier) PlayStatusSound(status analyzer.Status) {
 	if statusInfo, ok := n.cfg.GetStatusInfo(string(status)); ok {
 		n.playSoundDetached(statusInfo.Sound)
 	}
+}
+
+// SendBrowserNotificationWithClick posts a browser-event banner through
+// ClaudeNotifier (the identity users allow through macOS Focus) whose click
+// hands the conversation id back to the listener (/focus) so the extension
+// focuses the right tab in the right browser.
+func (n *Notifier) SendBrowserNotificationWithClick(status analyzer.Status, title, message, conversationID string) error {
+	executeCmd := ""
+	if exe, err := os.Executable(); err == nil {
+		if exe, err = filepath.EvalSymlinks(exe); err == nil {
+			executeCmd = shellQuote(exe) + " request-browser-focus " + shellQuote(conversationID)
+		}
+	}
+	return n.sendBrowserBanner(status, title, message, executeCmd)
 }
 
 // SendBrowserNotification posts a notification for a browser (claude.ai) event.
@@ -61,16 +77,32 @@ func (n *Notifier) SendBrowserNotification(status analyzer.Status, title, messag
 		return nil
 	}
 
-	notifierPath, err := GetTerminalNotifierPath()
-	if err != nil {
-		return fmt.Errorf("terminal-notifier not found: %w", err)
-	}
-
 	var executeCmd string
 	if chatURL != "" {
 		executeCmd = "open " + shellQuote(chatURL)
 	}
+	return n.sendBrowserBannerPrepared(status, notifTitle, body, executeCmd)
+}
 
+// sendBrowserBanner builds uniform content then posts via ClaudeNotifier.
+func (n *Notifier) sendBrowserBanner(status analyzer.Status, title, message, executeCmd string) error {
+	if !n.cfg.IsDesktopEnabled() {
+		return nil
+	}
+	notifTitle, body := n.BrowserNotificationContent(status, title, message)
+	return n.sendBrowserBannerPrepared(status, notifTitle, body, executeCmd)
+}
+
+// sendBrowserBannerPrepared posts a ready-made banner via ClaudeNotifier.
+func (n *Notifier) sendBrowserBannerPrepared(status analyzer.Status, notifTitle, body, executeCmd string) error {
+	statusInfo, exists := n.cfg.GetStatusInfo(string(status))
+	if !exists {
+		return fmt.Errorf("unknown status: %s", status)
+	}
+	notifierPath, err := GetTerminalNotifierPath()
+	if err != nil {
+		return fmt.Errorf("terminal-notifier not found: %w", err)
+	}
 	args := []string{"-title", notifTitle, "-message", body}
 	if executeCmd != "" {
 		args = append(args, "-execute", executeCmd)
@@ -89,7 +121,7 @@ func (n *Notifier) SendBrowserNotification(status analyzer.Status, title, messag
 		return fmt.Errorf("terminal-notifier error: %w, output: %s", err, string(output))
 	}
 
-	logging.Debug("Browser notification sent: title=%s url=%s", notifTitle, chatURL)
+	logging.Debug("Browser notification sent: title=%s", notifTitle)
 	n.playSoundDetached(statusInfo.Sound)
 	return nil
 }

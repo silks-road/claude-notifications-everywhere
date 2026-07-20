@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/777genius/claude-notifications/internal/audio"
+	"github.com/777genius/claude-notifications/internal/browserserve"
+	"github.com/777genius/claude-notifications/internal/config"
 	"github.com/777genius/claude-notifications/internal/errorhandler"
 	"github.com/777genius/claude-notifications/internal/hooks"
-	"github.com/777genius/claude-notifications/internal/config"
 	"github.com/777genius/claude-notifications/internal/logging"
 	"github.com/777genius/claude-notifications/internal/notifier"
 	"github.com/777genius/claude-notifications/internal/winfocus"
@@ -95,6 +96,15 @@ func main() {
 		runApprovalWatch(os.Args[2], os.Args[3], os.Args[4])
 	case "serve":
 		runBrowserServe()
+	case "request-browser-focus":
+		if len(os.Args) < 3 {
+			fmt.Fprintf(os.Stderr, "Error: request-browser-focus requires a conversation id\n")
+			os.Exit(1)
+		}
+		if err := browserserve.RequestFocus(os.Args[2]); err != nil {
+			fmt.Fprintf(os.Stderr, "request-browser-focus: %v\n", err)
+			os.Exit(1)
+		}
 	case "install-browser-listener":
 		runInstallBrowserListener()
 	case "play-sound":
