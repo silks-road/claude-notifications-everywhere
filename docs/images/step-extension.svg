@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="210" viewBox="0 0 560 210" font-family="-apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif">
+<rect x="8" y="8" width="544" height="194" rx="14" fill="#252527" stroke="#48484a"/>
+<text x="26" y="38" font-size="15" font-weight="700" fill="#ffffff">Browser → chrome://extensions</text>
+<text x="26" y="66" font-size="13" fill="#c9c9cd">1. Toggle &#x27;Developer mode&#x27; (top right)</text>
+<text x="26" y="90" font-size="13" fill="#c9c9cd">2. Click &#x27;Load unpacked&#x27;</text>
+<text x="26" y="114" font-size="13" fill="#c9c9cd">3. Pick the &#x27;extension&#x27; folder that opened in Finder</text>
+<text x="26" y="138" font-size="13" fill="#c9c9cd">4. Click the extension icon → paste the token → Save &amp; test</text>
+<rect x="480" y="28" width="46" height="26" rx="13" fill="#34c759"/><circle cx="507" cy="41" r="11" fill="#fff"/>
+<rect x="26" y="164" width="150" height="28" rx="7" fill="#3a3a3c" stroke="#505052"/><text x="101" y="183" font-size="12" fill="#fff" text-anchor="middle">Load unpacked</text>
+</svg>

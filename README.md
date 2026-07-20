@@ -30,7 +30,7 @@ You run Claude in several places — a terminal, the desktop app, a browser tab.
   - [What this actually does](#what-this-actually-does)
   - [Claude Desktop (Cowork) support — this fork](#claude-desktop-cowork-support-this-fork)
     - [Who can use this?](#who-can-use-this)
-    - [Setup (macOS) — no terminal or git needed](#setup-macos--no-terminal-or-git-needed)
+    - [Setup (macOS) — Claude does almost everything](#setup-macos--claude-does-almost-everything)
     - [Phone notifications in 5 minutes](#-phone-notifications-in-5-minutes)
     - [Browser (claude.ai) notifications](#-browser-claudeai-notifications)
     - [Troubleshooting macOS quirks](#troubleshooting-macos-quirks-worth-knowing)
@@ -66,26 +66,46 @@ Everything below is on top of the upstream plugin, which only knew about termina
 
 Any Claude account that can run **Claude Code** works — Pro, Max, Team, or Enterprise subscriptions, and API/Console (pay-as-you-go) users in the terminal. The **desktop app (Cowork) features need a plan that includes the Claude desktop app** (Pro and up); no separate API access is required — the plugin only reads local hook events and log files on your own machine. Free-tier accounts don't include Claude Code, so the plugin has nothing to notify about.
 
-### Setup (macOS) — no terminal or git needed
+### Setup (macOS) — Claude does almost everything
 
-Everything happens inside Claude Code or the Claude desktop app; the plugin downloads its own pre-built program (from this repo's [Releases](https://github.com/silks-road/claude-notifications-everywhere/releases)) the first time it runs.
+No terminal, no git. Type **three commands into any Claude chat**, one at a time:
 
-1. **Install the plugin** — type these two commands into any Claude chat input, one at a time:
-   ```
-   /plugin marketplace add silks-road/claude-notifications-everywhere
-   ```
-   ```
-   /plugin install claude-notifications-go@claude-notifications-go
-   ```
-2. **Grant permissions** (each once):
-   - *System Settings → Notifications → Claude Notifier*: **Allow**, style **Alerts** (persistent).
-   - *System Settings → Privacy & Security → Accessibility*: enable **ClaudeNotifier** — this is what lets a notification click press the right conversation in the sidebar. Until granted, clicks still focus the app.
-   - Using Focus modes? Add both **Claude** and **Claude Notifier** to the allowed apps.
+```
+/plugin marketplace add silks-road/claude-notifications-everywhere
+```
+```
+/plugin install claude-notifications-go@claude-notifications-go
+```
+```
+/claude-notifications-go:setup
+```
 
-3. *(Optional, for developers)* Building from source instead: clone the repo, `make build`, then copy `bin/claude-notifications` over the cached binary in `~/.claude/plugins/cache/claude-notifications-go/claude-notifications-go/<version>/bin/`.
+The third command starts a **guided setup**: Claude configures everything automatable (downloads its program, starts the browser listener, generates your extension token), opens the exact Settings panes and Finder windows you need, and then **walks you through the few toggles macOS insists a human clicks** — one at a time, checking each worked. Total hands-on time: about two minutes.
 
-> **Prefer to delegate?** Paste this into a Claude Code / Cowork chat and let Claude do the whole thing:
-> *"Install the claude-notifications-everywhere plugin from github.com/silks-road/claude-notifications-everywhere: add its marketplace, install the plugin, then walk me through the macOS notification and accessibility permissions it needs."*
+#### The human toggles, illustrated
+
+macOS never lets software grant itself permissions (a good thing!), so these three moments are yours — setup opens each window for you and Claude talks you through them:
+
+<p><img src="docs/images/step-notifications.svg?v=1" width="480" alt="System Settings, Notifications, Claude Notifier: Allow, style Alerts"/></p>
+
+*Lets the banners appear. Pick style "Alerts" so they stay until clicked.*
+
+<p><img src="docs/images/step-accessibility.svg?v=1" width="480" alt="System Settings, Privacy and Security, Accessibility: add and enable ClaudeNotifier.app"/></p>
+
+*Powers click-to-conversation and the Always allow / Allow once buttons.*
+
+<p><img src="docs/images/step-extension.svg?v=1" width="480" alt="chrome://extensions: Developer mode on, Load unpacked, pick the extension folder, paste token"/></p>
+
+*Only if you use claude.ai in a browser. Skip otherwise.*
+
+That's it. Ask a Claude session to do something and enjoy the ping.
+
+#### 🛠️ For tinkerers
+
+- **One-line terminal install:** `curl -fsSL https://raw.githubusercontent.com/silks-road/claude-notifications-everywhere/main/bin/bootstrap.sh | bash`
+- **Build from source:** clone, `make build`, then replace the cached binary at `~/.claude/plugins/cache/claude-notifications-go/claude-notifications-go/<version>/bin/claude-notifications-darwin-arm64` (delete first, copy, then `codesign --force -s -` — in-place copies corrupt the cached signature).
+- **Browser listener without the guided flow:** `claude-notifications install-browser-listener` (prints the extension token; LaunchAgent keeps it running).
+- All knobs live in `~/.claude/claude-notifications-go/config.json` — see [Configuration](#configuration).
 
 ### 📱 Phone notifications in 5 minutes
 
@@ -164,7 +184,7 @@ flowchart LR
 
 ### Quick Install (Recommended)
 
-> **macOS users:** the two-slash-command install in [the fork setup](#setup-macos--no-terminal-or-git-needed) needs no terminal at all. **Linux/Windows users:** this fork publishes macOS binaries only — use [upstream](https://github.com/777genius/claude-notifications-go) or build from source.
+> **macOS users:** the three-command install in [the fork setup](#setup-macos--claude-does-almost-everything) needs no terminal at all. **Linux/Windows users:** this fork publishes macOS binaries only — use [upstream](https://github.com/777genius/claude-notifications-go) or build from source.
 
 One command to install everything:
 

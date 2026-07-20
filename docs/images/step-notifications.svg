@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="150" viewBox="0 0 560 150" font-family="-apple-system, 'SF Pro Text', 'Segoe UI', Helvetica, Arial, sans-serif">
+<rect x="8" y="8" width="544" height="134" rx="14" fill="#252527" stroke="#48484a"/>
+<text x="26" y="38" font-size="15" font-weight="700" fill="#ffffff">System Settings → Notifications → Claude Notifier</text>
+<rect x="26" y="56" width="508" height="66" rx="10" fill="#2e2e30"/>
+<rect x="40" y="70" width="38" height="38" rx="9" fill="#D97757"/><text x="59" y="95" font-size="20" text-anchor="middle" fill="#faf5f0">✳</text>
+<text x="92" y="87" font-size="14" font-weight="600" fill="#fff">Claude Notifier</text>
+<text x="92" y="106" font-size="12" fill="#8e8e93">Allow notifications · style: Alerts</text>
+<rect x="470" y="76" width="46" height="26" rx="13" fill="#34c759"/><circle cx="497" cy="89" r="11" fill="#fff"/>
+</svg>

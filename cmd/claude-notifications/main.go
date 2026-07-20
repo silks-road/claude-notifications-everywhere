@@ -107,6 +107,8 @@ func main() {
 		}
 	case "install-browser-listener":
 		runInstallBrowserListener()
+	case "setup":
+		runSetup()
 	case "play-sound":
 		runPlaySound(os.Args[2:])
 	case "daemon", "--daemon":
