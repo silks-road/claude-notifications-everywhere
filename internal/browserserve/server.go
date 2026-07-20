@@ -143,10 +143,13 @@ func (s *Server) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Dedupe: ignore repeats of the same final message for a conversation
-	// (the content script may fire more than once per turn).
+	// (the extension may fire more than once per turn). Empty texts never
+	// dedupe — they carry no identity (content script not injected), and two
+	// distinct turns would otherwise swallow each other.
 	s.mu.Lock()
-	if prev, ok := s.lastSeen[ev.ConversationID]; ok && prev == ev.LastMessage {
+	if prev, ok := s.lastSeen[ev.ConversationID]; ok && ev.LastMessage != "" && prev == ev.LastMessage {
 		s.mu.Unlock()
+		logging.Debug("browser event deduped: conversation=%s", ev.ConversationID)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"ok":true,"deduped":true}`))
 		return
