@@ -102,6 +102,18 @@ func (n *Notifier) SendDesktop(status analyzer.Status, message, sessionID, cwd s
 	var convTitle string
 	if platform.IsDesktopSession() {
 		_, convTitle = resolveDesktopSession(sessionID)
+
+		// Don't ping about the conversation the user is actively looking at:
+		// suppress when the desktop app is frontmost AND this session is the
+		// currently viewed one. Other conversations still notify — that is
+		// the whole point of running several sessions at once. Approvals are
+		// exempt: their buttons are useful even mid-view.
+		if status != analyzer.StatusApprovalNeeded &&
+			desktopAppIsFrontmost() &&
+			isDesktopSessionViewed(sessionID) {
+			logging.Debug("Notification suppressed: user is viewing this conversation in the app")
+			return nil
+		}
 	}
 
 	// Build clean title.

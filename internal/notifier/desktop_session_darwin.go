@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/777genius/claude-notifications/internal/logging"
+	"github.com/777genius/claude-notifications/internal/platform"
 )
 
 // desktopSessionRecord is the subset of the Claude desktop app's per-session
@@ -19,6 +20,48 @@ type desktopSessionRecord struct {
 	Title        string `json:"title"`
 	IsArchived   bool   `json:"isArchived"`
 	LastActivity int64  `json:"lastActivityAt"`
+	LastFocused  int64  `json:"lastFocusedAt"`
+}
+
+// desktopAppIsFrontmost reports whether the Claude desktop app is the
+// frontmost application.
+func desktopAppIsFrontmost() bool {
+	front, ok := frontmostBundleID()
+	return ok && front == platform.DesktopAppBundleID
+}
+
+// isDesktopSessionViewed reports whether the conversation for cliSessionID is
+// the one currently shown in the desktop app, judged by it having the most
+// recent lastFocusedAt across all session records. Used to suppress
+// notifications for the conversation the user is actively looking at.
+// Fails closed to "not viewed" (notify) on any uncertainty.
+func isDesktopSessionViewed(cliSessionID string) bool {
+	root := desktopSessionsDir()
+	if root == "" || cliSessionID == "" {
+		return false
+	}
+	var target, maxFocused int64
+	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(d.Name(), ".json") {
+			return nil
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return nil
+		}
+		var rec desktopSessionRecord
+		if json.Unmarshal(data, &rec) != nil || rec.IsArchived {
+			return nil
+		}
+		if rec.LastFocused > maxFocused {
+			maxFocused = rec.LastFocused
+		}
+		if rec.CLISessionID == cliSessionID && rec.LastFocused > target {
+			target = rec.LastFocused
+		}
+		return nil
+	})
+	return target > 0 && target >= maxFocused
 }
 
 // desktopSessionsDir returns the root the desktop app stores session metadata

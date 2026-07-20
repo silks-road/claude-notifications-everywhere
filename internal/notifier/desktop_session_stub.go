@@ -22,6 +22,12 @@ func FocusDesktopSessionByCLIID(cliSessionID string) error {
 	return fmt.Errorf("focus-session not supported on this platform")
 }
 
+// desktopAppIsFrontmost is only meaningful on macOS.
+func desktopAppIsFrontmost() bool { return false }
+
+// isDesktopSessionViewed is only meaningful on macOS.
+func isDesktopSessionViewed(cliSessionID string) bool { return false }
+
 // RespondDesktopApproval is only implemented on macOS.
 func RespondDesktopApproval(cliSessionID, scope string) error {
 	return fmt.Errorf("respond-approval not supported on this platform")

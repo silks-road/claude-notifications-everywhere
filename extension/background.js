@@ -22,6 +22,16 @@ async function onTurnComplete(details) {
   const conversationId = conversationIdFromApiUrl(details.url);
   if (!conversationId || details.tabId < 0) return;
 
+  // Don't ping about the conversation the user is actively looking at: if the
+  // completing tab is the active tab of the focused window, skip entirely.
+  try {
+    const tab = await chrome.tabs.get(details.tabId);
+    if (tab.active) {
+      const win = await chrome.windows.get(tab.windowId);
+      if (win.focused) return;
+    }
+  } catch (_) {}
+
   // Let the final tokens render, then ask the page for title + last message.
   await new Promise((r) => setTimeout(r, 800));
 
