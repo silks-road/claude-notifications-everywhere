@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/777genius/claude-notifications/pkg/jsonl"
@@ -32,35 +33,20 @@ var awaitingUserPhrases = []string{
 	"please confirm",
 }
 
-// ClassifyFinalMessage classifies a status from a single final assistant
-// message string (used by the desktop/Cowork payload fallback when no
-// transcript is available). Order mirrors the transcript state machine's
-// priority: limit reached > usage warning > awaiting user > completion.
-func ClassifyFinalMessage(text string) Status {
-	if text == "" {
-		return StatusUnknown
-	}
-	msgs := []jsonl.Message{{
-		Type:    "assistant",
-		Message: jsonl.MessageContent{Role: "assistant", Content: []jsonl.Content{{Type: "text", Text: text}}},
-	}}
-	switch {
-	case detectSessionLimitReached(msgs):
-		return StatusSessionLimitReached
-	case detectUsageWarning(msgs):
-		return StatusUsageWarning
-	case awaitingUserResponse(msgs):
-		return StatusQuestion
-	default:
-		return StatusTaskComplete
-	}
-}
+// courtesyCloserRe matches polite sign-offs that contain asking-phrases but do
+// not actually request input — "let me know if you want any of it changed",
+// "tell me if anything's off", "feel free to ask". Matched spans are removed
+// before the phrase scan so closers never classify a turn as a question.
+// A message that ENDS with "?" is still a question regardless.
+var courtesyCloserRe = regexp.MustCompile(`(?i)((let me know|tell me|say the word|shout|ping me)\s+if\b[^.!?\n]*|feel free to[^.!?\n]*|if you (have|need|want)[^.!?\n]*(question|help|anything|else)[^.!?\n]*|happy to (help|assist)[^.!?\n]*)`)
 
 // awaitingUserResponse reports whether the final assistant message asks the
 // user for input: it ends with a question, or contains an explicit
-// waiting-on-you phrase. Used to reclassify tool-heavy turns that finish by
-// asking something ("done X — approve the push?") from task_complete to
-// question, so the notification says "Needs you" instead of "Done".
+// waiting-on-you phrase. Courtesy closers ("let me know if you need anything")
+// are stripped first — they are sign-offs, not requests. Used to reclassify
+// tool-heavy turns that finish by asking something ("done X — approve the
+// push?") from task_complete to question, so the notification says
+// "Input needed" instead of "Done".
 func awaitingUserResponse(messages []jsonl.Message) bool {
 	last := jsonl.GetLastAssistantMessages(messages, 1)
 	if len(last) == 0 {
@@ -77,7 +63,7 @@ func awaitingUserResponse(messages []jsonl.Message) bool {
 		return true
 	}
 
-	lower := strings.ToLower(text)
+	lower := strings.ToLower(courtesyCloserRe.ReplaceAllString(text, ""))
 	for _, phrase := range awaitingUserPhrases {
 		if strings.Contains(lower, phrase) {
 			return true
