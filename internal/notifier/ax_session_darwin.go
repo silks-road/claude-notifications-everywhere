@@ -57,6 +57,9 @@ static void enableElectronAX(int pid) {
 // word boundary. Context-menu buttons ("More options for <title>") share the
 // suffix and are excluded by role (they are AXPopUpButton, not AXButton).
 static BOOL titleMatchesSession(NSString *title, NSString *target) {
+	// Never treat a "Mark as unread <title>" action button as the conversation
+	// row — pressing it toggles unread instead of opening (Home-area rows).
+	if ([title hasPrefix:@"Mark as unread"]) return NO;
 	if ([title isEqualToString:target]) return YES;
 	if ([title hasSuffix:[@" " stringByAppendingString:target]]) return YES;
 	return NO;
@@ -345,11 +348,62 @@ func FocusDesktopSessionByCLIID(cliSessionID string) error {
 
 // FocusDesktopSessionByWrapper focuses a conversation by the desktop app's own
 // wrapper id (used for Cowork/Home task notifications, whose click has no CLI
-// id to resolve from). Presses the sidebar item matching the conversation
-// title through the Accessibility API.
-func FocusDesktopSessionByWrapper(wrapperID string) error {
-	_, title := ResolveDesktopSessionByWrapper(wrapperID)
-	return focusDesktopByTitle(title, "wrapper "+wrapperID)
+// id to resolve from). title is passed through from the notification because
+// Home tasks have no session record to re-resolve it from; falls back to a
+// record lookup only if empty. Presses the sidebar item matching the title.
+func FocusDesktopSessionByWrapper(wrapperID, title string) error {
+	if title == "" {
+		_, title = ResolveDesktopSessionByWrapper(wrapperID)
+	}
+
+	cBundleID := C.CString(platform.DesktopAppBundleID)
+	defer C.free(unsafe.Pointer(cBundleID))
+	pid := int(C.axSessionFindPID(cBundleID))
+	if pid < 0 {
+		if err := exec.Command("open", "-b", platform.DesktopAppBundleID).Run(); err != nil {
+			return fmt.Errorf("Claude desktop app is not running and could not be launched: %w", err)
+		}
+		deadline := time.Now().Add(15 * time.Second)
+		for pid < 0 {
+			if time.Now().After(deadline) {
+				return fmt.Errorf("Claude desktop app did not start in time")
+			}
+			time.Sleep(500 * time.Millisecond)
+			pid = int(C.axSessionFindPID(cBundleID))
+		}
+		time.Sleep(2 * time.Second)
+	}
+	C.axSessionActivate(C.int(pid))
+
+	if C.promptForAXTrust() == 0 {
+		return fmt.Errorf("accessibility permission not granted")
+	}
+	C.enableElectronAX(C.int(pid))
+
+	// Land on the Home area, where cloud/Home tasks live — reliable and
+	// non-destructive (the task list is right there). We do NOT press the task
+	// row: an unread task's only titled control is "Mark as unread <title>",
+	// and pressing it toggles unread instead of opening. Best-effort exact-open
+	// is attempted only for rows that expose a real, non-action title.
+	cHome := C.CString("Home")
+	C.pressExactButtonInApp(C.int(pid), cHome)
+	C.free(unsafe.Pointer(cHome))
+
+	if title == "" {
+		return nil // on Home area; nothing more we can safely do
+	}
+	cTitle := C.CString(title)
+	defer C.free(unsafe.Pointer(cTitle))
+	deadline := time.Now().Add(4 * time.Second)
+	for time.Now().Before(deadline) {
+		if C.pressSessionButtonInApp(C.int(pid), cTitle) == 1 {
+			logging.Debug("Opened Home task %q", title)
+			return nil
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+	logging.Debug("Home task %q not directly openable; left on Home area", title)
+	return nil
 }
 
 // focusDesktopByTitle activates the Claude desktop app and presses the sidebar
@@ -398,8 +452,12 @@ func focusDesktopByTitle(title, label string) error {
 	// conversations are only listed in the sidebar while the "Code" area is
 	// active, so after a couple of misses (user is in Home) switch areas and
 	// keep looking.
-	deadline := time.Now().Add(8 * time.Second)
-	switchedArea := false
+	// A conversation lives in exactly one area's sidebar — Code sessions under
+	// "Code", Home/Cowork tasks under "Home" — so if the first look misses,
+	// cycle through both areas and retry rather than assuming Code.
+	areas := []string{"Code", "Home"}
+	deadline := time.Now().Add(10 * time.Second)
+	areaIdx := 0
 	for {
 		switch C.pressSessionButtonInApp(C.int(pid), cTitle) {
 		case 1:
@@ -408,19 +466,18 @@ func focusDesktopByTitle(title, label string) error {
 		case -1:
 			return fmt.Errorf("accessibility permission not granted")
 		}
-		// Claude Code conversations are only listed while the "Code" area is
-		// active; on the first miss (user is in Home) switch immediately.
-		if !switchedArea {
-			switchedArea = true
-			cCode := C.CString("Code")
-			if C.pressExactButtonInApp(C.int(pid), cCode) == 1 {
-				logging.Debug("Conversation not in sidebar; switched app to Code area")
+		// Miss: switch to the next area (its recents list re-renders) and retry.
+		if areaIdx < len(areas) {
+			cArea := C.CString(areas[areaIdx])
+			if C.pressExactButtonInApp(C.int(pid), cArea) == 1 {
+				logging.Debug("Conversation not found; switched app to %s area", areas[areaIdx])
 			}
-			C.free(unsafe.Pointer(cCode))
+			C.free(unsafe.Pointer(cArea))
+			areaIdx++
 		}
 		if time.Now().After(deadline) {
 			return fmt.Errorf("conversation %q not found in app UI (app left focused)", title)
 		}
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(300 * time.Millisecond)
 	}
 }

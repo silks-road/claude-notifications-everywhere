@@ -40,7 +40,9 @@ func (n *Notifier) SendCoworkTaskNotification(title, wrapperID string) error {
 	executeCmd := ""
 	if exe, err := os.Executable(); err == nil {
 		if exe, err = filepath.EvalSymlinks(exe); err == nil {
-			executeCmd = shellQuote(exe) + " focus-cowork " + shellQuote(wrapperID)
+			// Pass the resolved title through — Home tasks have no session
+			// record for the click handler to re-resolve it from.
+			executeCmd = shellQuote(exe) + " focus-cowork " + shellQuote(wrapperID) + " " + shellQuote(title)
 		}
 	}
 	return n.sendBrowserBanner(analyzer.StatusTaskComplete, title, "Task finished.", executeCmd)

@@ -93,7 +93,11 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error: focus-cowork requires a wrapper session id\n")
 			os.Exit(1)
 		}
-		if err := notifier.FocusDesktopSessionByWrapper(os.Args[2]); err != nil {
+		title := ""
+		if len(os.Args) >= 4 {
+			title = os.Args[3]
+		}
+		if err := notifier.FocusDesktopSessionByWrapper(os.Args[2], title); err != nil {
 			fmt.Fprintf(os.Stderr, "focus-cowork: %v\n", err)
 			os.Exit(1)
 		}

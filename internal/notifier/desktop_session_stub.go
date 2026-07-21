@@ -37,7 +37,7 @@ func ResolveDesktopSessionByWrapper(wrapperID string) (cliSessionID, title strin
 func CurrentFocusedDesktopSession() string { return "" }
 
 // FocusDesktopSessionByWrapper is only implemented on macOS.
-func FocusDesktopSessionByWrapper(wrapperID string) error {
+func FocusDesktopSessionByWrapper(wrapperID, title string) error {
 	return fmt.Errorf("focus-cowork not supported on this platform")
 }
 
