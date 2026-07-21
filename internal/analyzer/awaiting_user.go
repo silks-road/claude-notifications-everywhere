@@ -71,3 +71,25 @@ func awaitingUserResponse(messages []jsonl.Message) bool {
 	}
 	return false
 }
+
+// ClassifyFinalMessage classifies a bare final-message text (used where no
+// transcript exists, e.g. browser events) into a notification status.
+func ClassifyFinalMessage(text string) Status {
+	if text == "" {
+		return StatusUnknown
+	}
+	msgs := []jsonl.Message{{
+		Type:    "assistant",
+		Message: jsonl.MessageContent{Role: "assistant", Content: []jsonl.Content{{Type: "text", Text: text}}},
+	}}
+	switch {
+	case detectSessionLimitReached(msgs):
+		return StatusSessionLimitReached
+	case detectUsageWarning(msgs):
+		return StatusUsageWarning
+	case awaitingUserResponse(msgs):
+		return StatusQuestion
+	default:
+		return StatusTaskComplete
+	}
+}
