@@ -97,10 +97,18 @@ func main() {
 		if len(os.Args) >= 4 {
 			title = os.Args[3]
 		}
+		// Initialize logging so this click path (spawned by ClaudeNotifier) is
+		// diagnosable — it otherwise runs silently.
+		if _, err := logging.InitLogger(getPluginRoot()); err == nil {
+			defer logging.Close()
+		}
+		logging.Debug("focus-cowork invoked: wrapper=%s title=%q", os.Args[2], title)
 		if err := notifier.FocusDesktopSessionByWrapper(os.Args[2], title); err != nil {
+			logging.Warn("focus-cowork failed: %v", err)
 			fmt.Fprintf(os.Stderr, "focus-cowork: %v\n", err)
 			os.Exit(1)
 		}
+		logging.Debug("focus-cowork completed for wrapper=%s", os.Args[2])
 	case "approval-watch":
 		if len(os.Args) < 5 {
 			fmt.Fprintf(os.Stderr, "Error: approval-watch requires session id, cwd and log offset\n")

@@ -376,9 +376,11 @@ func FocusDesktopSessionByWrapper(wrapperID, title string) error {
 	C.axSessionActivate(C.int(pid))
 
 	if C.promptForAXTrust() == 0 {
+		logging.Warn("focus-cowork: AX trust NOT granted for this process")
 		return fmt.Errorf("accessibility permission not granted")
 	}
 	C.enableElectronAX(C.int(pid))
+	time.Sleep(600 * time.Millisecond) // let the AX tree build after activation
 
 	// Land on the Home area, where cloud/Home tasks live — reliable and
 	// non-destructive (the task list is right there). We do NOT press the task
@@ -386,8 +388,9 @@ func FocusDesktopSessionByWrapper(wrapperID, title string) error {
 	// and pressing it toggles unread instead of opening. Best-effort exact-open
 	// is attempted only for rows that expose a real, non-action title.
 	cHome := C.CString("Home")
-	C.pressExactButtonInApp(C.int(pid), cHome)
+	homeResult := int(C.pressExactButtonInApp(C.int(pid), cHome))
 	C.free(unsafe.Pointer(cHome))
+	logging.Debug("focus-cowork: pid=%d Home-press result=%d (1=pressed 0=not found -1=untrusted)", pid, homeResult)
 
 	if title == "" {
 		return nil // on Home area; nothing more we can safely do
