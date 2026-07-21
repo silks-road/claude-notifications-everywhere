@@ -24,6 +24,7 @@ BIN="$PLUGIN_ROOT/bin/claude-notifications"
 The output marks lines as `[done]`, `[check]`, or `[you]`. For every `[you]` line, guide the user through it interactively:
 
 1. **Notifications** (if flagged): the user opens *System Settings → Notifications → Claude Notifier*, sets **Allow** + style **Alerts**. Ask them to confirm they saw the hello notification.
+1b. **Turn OFF the Claude app's own notifications** (avoids duplicates — this plugin covers Home tasks itself): *System Settings → Notifications → "Claude"* (the app, orange icon), uncheck Desktop, Notification Centre, Lock Screen. Leave "Claude Notifier" allowed.
 2. **Browser extension** (optional — only if they use claude.ai in a browser): a Finder window with the `extension` folder opened. Walk them through: `chrome://extensions` → toggle **Developer mode** (top right) → **Load unpacked** → select that folder → click the extension's icon in the toolbar → paste the token (it's in the setup output) → **Save & test**.
 3. **Accessibility**: a Finder window highlighting `ClaudeNotifier.app` and the Accessibility settings pane both opened. The user drags the app into the list and toggles it **ON**. This powers click-to-conversation and the approval buttons.
 4. **Focus modes**: if they use Focus, they add **Claude** and **Claude Notifier** to its allowed apps.

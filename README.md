@@ -14,7 +14,7 @@
 
 You run Claude in several places — a terminal, the desktop app, a browser tab. Every one of them goes quiet while Claude works, and you move on to something else. This plugin makes sure the moment that matters reaches you, wherever you are, and gets you back to the right place in one click:
 
-- 🖥️ **Works on every surface** — terminal, **Claude desktop app (Cowork)**, **claude.ai in Chrome** (via the bundled [extension](extension/)), and **your phone** (via webhooks). Remote Cowork *Home tasks* are covered by the Claude app's own notification channel — setup points you at the one toggle it needs
+- 🖥️ **Works on every surface** — terminal, **Claude desktop app (Cowork)** including cloud **Home tasks**, **claude.ai in Chrome** (via the bundled [extension](extension/)), and **your phone** (via webhooks) — all through one notification style, no duplicates
 - 🎯 **Click lands on the exact conversation** — not just the app: it selects the right chat in the desktop app's sidebar, or focuses the right browser tab (never opening duplicates, even with split views)
 - 🔐 **Approve without opening anything** — when Claude needs permission, the notification carries **"Always allow"** and **"Allow once"** buttons that answer the real request in the app
 - 🧠 **The alert tells you what and where** — `✅ Done - Wanted poster generator` when finished; `❓ Input needed - Grand Line route planner` *with the actual question as the message* when Claude is waiting on you
@@ -96,7 +96,7 @@ macOS never lets software grant itself permissions (a good thing!), so these mom
 
 <p><img src="docs/images/step-accessibility.svg?v=1" width="480" alt="System Settings, Privacy and Security, Accessibility: add and enable ClaudeNotifier.app"/></p>
 
-**3. Let the Claude app itself notify too** — remote Cowork *Home tasks* run in Anthropic's cloud and are invisible to any plugin; Anthropic's own notifications cover them. Set **"Claude"** (the app) to **Allow**, style **Alerts**, in System Settings → Notifications.
+**3. Turn the Claude app's *own* notifications off** — this plugin notifies for everything itself (including cloud **Home tasks**, which it detects from the app's log), so the app's built-in notifications would only duplicate it. In *System Settings → Notifications → "Claude"* (the app), uncheck **Desktop**, **Notification Centre**, and **Lock Screen**. Leave **Claude Notifier** (this plugin) fully allowed. Clicking a Home-task notification opens Claude on the Home area where the task lives.
 
 **4. Do you use claude.ai in a browser?** If not, you're already done — skip this. If yes, load the bundled extension so browser chats notify too:
 
